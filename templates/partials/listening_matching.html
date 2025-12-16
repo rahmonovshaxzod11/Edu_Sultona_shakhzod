@@ -1,0 +1,94 @@
+<!-- templates/partials/listening_matching.html -->
+{% load custom_filters %}
+
+<div class="matching-section">
+    <h3><i class="fas fa-link"></i> Matching Exercise</h3>
+
+    {% if matching_questions %}
+        {% for match in matching_questions %}
+        <div class="matching-item">
+            <h4>{{ match.title }}</h4>
+
+            <!-- Ko'rsatmalar -->
+            <div class="instruction-box">
+                <p><strong>Ko'rsatma:</strong> {{ match.instruction }}</p>
+            </div>
+
+            <!-- Matn qismi -->
+            <div class="matching-content">
+                <!-- BIRINCHI USTUN (Savollar) -->
+                <div class="matching-column questions-column">
+                    <h5><i class="fas fa-question-circle"></i> Savollar:</h5>
+                    <div class="questions-list">
+                        {% with match.column_a|split_lines as questions %}
+                        {% for question in questions %}
+                        <div class="question-item">
+                            <span class="question-number">{{ forloop.counter }}.</span>
+                            <span class="question-text">{{ question }}</span>
+                        </div>
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <!-- IKKINCHI USTUN (Javoblar) -->
+                <div class="matching-column answers-column">
+                    <h5><i class="fas fa-list-ul"></i> Javoblar:</h5>
+                    <div class="answers-list">
+                        {% with match.column_b|split_lines as answers %}
+                        {% for answer in answers %}
+                        <div class="answer-item">
+                            <span class="answer-letter">{{ forloop.counter0|get_index_letter }})</span>
+                            <span class="answer-text">{{ answer }}</span>
+                        </div>
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <!-- TANLASH USTUNI -->
+                <div class="matching-column selection-column">
+                    <h5><i class="fas fa-mouse-pointer"></i> Tanlash:</h5>
+                    <form class="matching-form" id="matching-form-{{ match.id }}">
+                        {% csrf_token %}
+
+                        {% with match.column_a|split_lines as questions %}
+                        {% for question in questions %}
+                        <div class="selection-item">
+                            <label for="match_{{ match.id }}_{{ forloop.counter }}">
+                                <strong>{{ forloop.counter }}.</strong> {{ question|truncatechars:30 }}
+                            </label>
+                            <select name="match_{{ match.id }}_{{ forloop.counter }}"
+                                    id="match_{{ match.id }}_{{ forloop.counter }}"
+                                    class="form-select" required>
+                                <option value="">Tanlang</option>
+                                {% with match.column_b|split_lines as answers %}
+                                {% for answer in answers %}
+                                <option value="{{ forloop.counter0|get_index_letter }}">
+                                    {{ forloop.counter0|get_index_letter }}) {{ answer|truncatechars:30 }}
+                                </option>
+                                {% endfor %}
+                                {% endwith %}
+                            </select>
+                        </div>
+                        {% endfor %}
+                        {% endwith %}
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Submit tugmasi -->
+        <div class="submit-section">
+            <button type="button" onclick="submitMatchingTest()" class="btn-primary btn-lg">
+                <i class="fas fa-paper-plane"></i> Testni topshirish
+            </button>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Bu listening uchun matching mashqlari hali qo'shilmagan.
+        </div>
+    {% endif %}
+</div>

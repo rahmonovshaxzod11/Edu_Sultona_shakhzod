@@ -1,0 +1,49 @@
+<!-- templates/partials/listening_gap_filling.html -->
+{% load custom_filters %}
+
+<div class="gap-filling-section">
+    <h3><i class="fas fa-pen-fancy"></i> Gap Filling Exercise</h3>
+
+    {% if gap_fillings %}
+    <form id="listening-form" data-listening-id="{{ listening.id }}">
+        {% csrf_token %}
+
+        {% for gap in gap_fillings %}
+        <div class="gap-item">
+            <div class="gap-text">
+                {{ gap.text_with_gaps|linebreaks }}
+            </div>
+
+            <div class="gap-answers">
+                {% for gap_opt in gap.options_list %}
+                <div class="gap-answer-item">
+                    <label for="gap_{{ gap.id }}_{{ gap_opt.gap_letter }}">
+                        <strong>({{ gap_opt.gap_letter }})</strong>
+                        <select name="gap_{{ gap.id }}_{{ gap_opt.gap_letter }}"
+                                id="gap_{{ gap.id }}_{{ gap_opt.gap_letter }}" required>
+                            <option value="">Tanlang</option>
+                            {% with gap_opt.options|split_string:"," as options_list %}
+                                {% for option in options_list %}
+                                <option value="{{ option }}">{{ option }}</option>
+                                {% endfor %}
+                            {% endwith %}
+                        </select>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="submit-section">
+            <button type="button" onclick="submitListeningTest()" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Testni topshirish
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i> Bu listening uchun gap filling mashqlari hali qo'shilmagan.
+    </div>
+    {% endif %}
+</div>

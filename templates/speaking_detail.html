@@ -1,0 +1,1661 @@
+<!-- templates/speaking_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ speaking.title }} - Speaking - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="lesson-header">
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="{% url 'home' %}">Bosh sahifa</a> >
+            <a href="{% url 'course_detail' module.course.id %}">{{ course.name }}</a> >
+            <a href="{% url 'module_detail' module.id %}">{{ module.title }}</a> >
+            <span>{{ speaking.title }}</span>
+        </nav>
+
+        <h1><i class="fas fa-microphone-alt"></i> {{ speaking.title }}</h1>
+        <div class="lesson-meta">
+            <span><i class="fas fa-signal"></i> {{ speaking.get_level_display }}</span>
+            <span><i class="fas fa-clock"></i> {{ speaking.target_duration }} soniya</span>
+            <span><i class="fas fa-comments"></i> {{ speaking.get_speaking_type_display }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="speaking-content">
+    <div class="container">
+        <div class="speaking-container">
+            <!-- LEFT COLUMN: Instruction & Recording -->
+            <div class="speaking-left">
+                <!-- INSTRUCTION SECTION -->
+                <div class="instruction-section">
+                    <h3><i class="fas fa-info-circle"></i> Ko'rsatmalar</h3>
+                    <div class="instruction-box">
+                        <div class="instruction-content">
+                            <p>{{ speaking.instruction_text }}</p>
+
+                            {% if speaking.example_text %}
+                            <div class="example-section">
+                                <h4><i class="fas fa-lightbulb"></i> Namuna javob:</h4>
+                                <div class="example-text">
+                                    {{ speaking.example_text|linebreaks }}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if questions %}
+                            <div class="questions-section">
+                                <h4><i class="fas fa-question-circle"></i> Savollar:</h4>
+                                <ol class="questions-list">
+                                    {% for question in questions %}
+                                    <li>
+                                        <strong>{{ question.question_text }}</strong>
+                                        {% if question.hints %}
+                                        <p class="hints"><small><i class="fas fa-lightbulb"></i> {{ question.hints }}</small></p>
+                                        {% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECORDING SECTION -->
+                <div class="recording-section">
+                    <h3><i class="fas fa-microphone"></i> Audio yozish</h3>
+
+                    <div class="recording-box">
+                        <!-- Timer Display -->
+                        <div class="timer-display">
+                            <div class="timer-circle">
+                                <svg width="120" height="120" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="#eee" stroke-width="8"></circle>
+                                    <circle id="timer-progress" cx="60" cy="60" r="54" fill="none"
+                                            stroke="#3498db" stroke-width="8" stroke-linecap="round"
+                                            transform="rotate(-90 60 60)" stroke-dasharray="339.292"
+                                            stroke-dashoffset="339.292"></circle>
+                                </svg>
+                                <div class="timer-text">
+                                    <span id="timer-seconds">00</span>
+                                    <span class="timer-label">soniya</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recording Controls -->
+                        <div class="recording-controls">
+                            <button id="start-recording" class="btn-record-start" onclick="startRecording()">
+                                <i class="fas fa-microphone"></i> Yozishni boshlash
+                            </button>
+                            <button id="stop-recording" class="btn-record-stop" onclick="stopRecording()" disabled>
+                                <i class="fas fa-stop"></i> To'xtatish
+                            </button>
+                            <button id="play-audio" class="btn-play" onclick="playRecording()" disabled>
+                                <i class="fas fa-play"></i> Tinglash
+                            </button>
+                            <button id="delete-audio" class="btn-delete" onclick="deleteRecording()" disabled>
+                                <i class="fas fa-trash"></i> O'chirish
+                            </button>
+                        </div>
+
+                        <!-- Recording Status -->
+                        <div class="recording-status">
+                            <div id="recording-indicator" class="recording-indicator" style="display: none;">
+                                <span class="recording-dot"></span>
+                                <span>Yozilmoqda...</span>
+                            </div>
+                            <div id="audio-length" class="audio-length">Davomiylik: <span>0s</span></div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="submit-section">
+                            <button id="submit-speaking" class="btn-primary" onclick="submitSpeaking()" disabled>
+                                <i class="fas fa-paper-plane"></i> Tahlil qilish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Results & Analysis -->
+            <div class="speaking-right">
+                <!-- PREVIOUS ATTEMPTS -->
+                {% if attempts %}
+                <div class="previous-attempts">
+                    <h3><i class="fas fa-history"></i> Oldingi urinishlar</h3>
+                    <div class="attempts-list">
+                        {% for attempt in attempts %}
+                        <div class="attempt-item" onclick="showAttempt({{ attempt.id }})">
+                            <div class="attempt-date">{{ attempt.created_at|date:"d.m.Y H:i" }}</div>
+                            <div class="attempt-score">
+                                <div class="score-circle" style="background: {% if attempt.overall_score >= 80 %}#27ae60{% elif attempt.overall_score >= 60 %}#f39c12{% else %}#e74c3c{% endif %};">
+                                    {{ attempt.overall_score|floatformat:0 }}
+                                </div>
+                            </div>
+                            <div class="attempt-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">So'zlar:</span>
+                                    <span class="detail-value">{{ attempt.word_count }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Davomiylik:</span>
+                                    <span class="detail-value">{{ attempt.duration }}s</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- RESULTS SECTION -->
+                <!-- speaking_detail.html faylida, results-section qismini quyidagicha yangilang: -->
+
+                <!-- RESULTS SECTION -->
+                <div class="results-section" id="results-section" style="display: none;">
+                    <h3><i class="fas fa-chart-bar"></i> Tahlil natijalari</h3>
+
+                    <!-- Score Cards with Visual Effects -->
+                    <div class="score-cards-container">
+                        <div class="score-card overall-score-card">
+                            <div class="score-card-header">
+                                <i class="fas fa-star"></i>
+                                <h4>Umumiy Baho</h4>
+                            </div>
+                            <div class="score-circle-large" id="overall-score-circle">
+                                <div class="score-number-large" id="overall-score">0</div>
+                                <div class="score-label">/100</div>
+                            </div>
+                            <div class="score-description" id="overall-description">Yuklanmoqda...</div>
+                        </div>
+
+                        <div class="score-cards-grid">
+                            <div class="score-card">
+                                <div class="score-card-header">
+                                    <i class="fas fa-bolt"></i>
+                                    <h4>Fluency</h4>
+                                </div>
+                                <div class="score-progress" id="fluency-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="fluency-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="score-description" id="fluency-description">Oqimlilik</div>
+                            </div>
+
+                            <div class="score-card">
+                                <div class="score-card-header">
+                                    <i class="fas fa-book"></i>
+                                    <h4>Vocabulary</h4>
+                                </div>
+                                <div class="score-progress" id="vocabulary-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="vocabulary-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="score-description" id="vocabulary-description">So'z boyligi</div>
+                            </div>
+
+                            <div class="score-card">
+                                <div class="score-card-header">
+                                    <i class="fas fa-edit"></i>
+                                    <h4>Grammar</h4>
+                                </div>
+                                <div class="score-progress" id="grammar-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="grammar-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="score-description" id="grammar-description">Grammatika</div>
+                            </div>
+
+                            <div class="score-card">
+                                <div class="score-card-header">
+                                    <i class="fas fa-volume-up"></i>
+                                    <h4>Pronunciation</h4>
+                                </div>
+                                <div class="score-progress" id="pronunciation-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="pronunciation-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="score-description" id="pronunciation-description">Talaffuz</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- AI Voice Feedback Section -->
+                    <div class="ai-voice-section">
+                        <h4><i class="fas fa-robot"></i> AI Ovozli Tahlil</h4>
+                        <div class="voice-player">
+                            <div class="voice-visualizer" id="voice-visualizer">
+                                <div class="voice-bar"></div>
+                                <div class="voice-bar"></div>
+                                <div class="voice-bar"></div>
+                                <div class="voice-bar"></div>
+                                <div class="voice-bar"></div>
+                                <div class="voice-bar"></div>
+                                <div class="voice-bar"></div>
+                                <div class="voice-bar"></div>
+                            </div>
+                            <div class="voice-controls">
+                                <button id="play-ai-voice" class="btn-voice-play" onclick="playAIVoice()">
+                                    <i class="fas fa-play"></i> AI Tahlilini Tinglash
+                                </button>
+                                <button id="pause-ai-voice" class="btn-voice-pause" onclick="pauseAIVoice()" style="display: none;">
+                                    <i class="fas fa-pause"></i> Pauza
+                                </button>
+                                <div class="voice-time" id="voice-time">00:00</div>
+                            </div>
+                        </div>
+                        <div class="voice-transcript">
+                            <h5><i class="fas fa-comment"></i> AI Feedback Matni:</h5>
+                            <div class="transcript-text" id="ai-feedback-text">
+                                Tahlil qilinmagan...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suggestions Section -->
+                    <div class="suggestions-section">
+                        <h4><i class="fas fa-lightbulb"></i> Takliflar</h4>
+                        <div class="suggestions-list" id="suggestions-list">
+                            <div class="suggestion-item">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Takliflar yuklanmoqda...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TIPS SECTION -->
+                <div class="tips-section" id="tips-section">
+                    <h3><i class="fas fa-tips"></i> Speaking uchun maslahatlar</h3>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <i class="fas fa-volume-up"></i>
+                            <div class="tip-content">
+                                <h5>Ovozingizni aniq aytish</h5>
+                                <p>Har bir so'zni aniq va o'rtacha tezlikda aytishga harakat qiling.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-brain"></i>
+                            <div class="tip-content">
+                                <h5>Oldindan tayyorlang</h5>
+                                <p>Javobingizni bir marta o'ylab ko'ring, keyin yozishni boshlang.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-clock"></i>
+                            <div class="tip-content">
+                                <h5>Vaqtni nazorat qiling</h5>
+                                <p>Maqsadli vaqt ichida javob berishga harakat qiling.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-smile"></i>
+                            <div class="tip-content">
+                                <h5>Tabiiy bo'ling</h5>
+                                <p>Qat'iyatlik bilan, ammo tabiiy nutq so'zlashga harakat qiling.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION -->
+        <div class="navigation-buttons">
+            <div class="nav-left">
+                {% if prev_content %}
+                    {% if prev_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi dars
+                        </a>
+                    {% elif prev_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi listening
+                        </a>
+                    {% elif prev_content.0 == 'speaking' %}
+                        <a href="{% url 'speaking_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi speaking
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                <a href="{% url 'module_detail' module.id %}" class="btn-secondary">
+                    <i class="fas fa-list"></i> Modulga qaytish
+                </a>
+            </div>
+
+            <div class="nav-right">
+                {% if next_content %}
+                    {% if next_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi dars <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi listening <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'speaking' %}
+                        <a href="{% url 'speaking_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi speaking <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- speaking_detail.html - Yangilangan JavaScript qismi -->
+<script>
+// Global variables
+let mediaRecorder;
+let audioChunks = [];
+let audioBlob;
+let audioUrl;
+let audioElement;
+let recordingTimer;
+let recordingSeconds = 0;
+let maxRecordingTime = {{ speaking.target_duration }};
+const speakingId = {{ speaking.id }};
+
+// Timer functions
+function updateTimer() {
+    recordingSeconds++;
+
+    // Update timer display
+    document.getElementById('timer-seconds').textContent =
+        recordingSeconds < 10 ? '0' + recordingSeconds : recordingSeconds;
+
+    // Update progress circle
+    const progress = (recordingSeconds / maxRecordingTime) * 339.292;
+    const progressCircle = document.getElementById('timer-progress');
+    progressCircle.style.strokeDashoffset = 339.292 - progress;
+
+    // Update audio length
+    document.querySelector('#audio-length span').textContent = recordingSeconds + 's';
+
+    // Stop if reached max time
+    if (recordingSeconds >= maxRecordingTime) {
+        stopRecording();
+        alert('Yozish vaqti tugadi!');
+    }
+}
+
+// Recording functions
+async function startRecording() {
+    try {
+        console.log('Starting recording...');
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                channelCount: 1,
+                sampleRate: 16000
+            }
+        });
+
+        mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'audio/webm;codecs=opus'
+        });
+
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = async () => {
+            console.log('Recording stopped, processing...');
+
+            // Stream ni to'xtatish
+            stream.getTracks().forEach(track => track.stop());
+
+            // WebM ni Blob ga aylantirish
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioUrl = URL.createObjectURL(audioBlob);
+
+            // Create audio element for playback
+            audioElement = new Audio(audioUrl);
+
+            audioElement.onloadedmetadata = () => {
+                console.log('Audio loaded, duration:', audioElement.duration);
+            };
+
+            // Enable buttons
+            document.getElementById('play-audio').disabled = false;
+            document.getElementById('delete-audio').disabled = false;
+            document.getElementById('submit-speaking').disabled = false;
+
+            // Hide recording indicator
+            document.getElementById('recording-indicator').style.display = 'none';
+
+            console.log('Recording ready for submission');
+        };
+
+        // Start recording
+        mediaRecorder.start(100); // 100ms chunks
+        recordingSeconds = 0;
+
+        // Start timer
+        recordingTimer = setInterval(updateTimer, 1000);
+
+        // Update UI
+        document.getElementById('start-recording').disabled = true;
+        document.getElementById('stop-recording').disabled = false;
+        document.getElementById('recording-indicator').style.display = 'flex';
+
+        console.log('Recording started successfully');
+
+    } catch (error) {
+        console.error('Error starting recording:', error);
+        alert('Microfon ruxsatini tekshiring yoki boshqa brauzer bilan urinib ko\'ring!');
+    }
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        clearInterval(recordingTimer);
+
+        // Update UI
+        document.getElementById('start-recording').disabled = false;
+        document.getElementById('stop-recording').disabled = true;
+
+        console.log('Recording stopped manually');
+    }
+}
+
+function playRecording() {
+    if (audioElement) {
+        audioElement.currentTime = 0;
+        audioElement.play().catch(e => console.error('Play error:', e));
+    }
+}
+
+function deleteRecording() {
+    if (confirm('Yozilgan audioni o\'chirishni istaysizmi?')) {
+        // Reset everything
+        audioChunks = [];
+        audioBlob = null;
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        audioUrl = null;
+        audioElement = null;
+        recordingSeconds = 0;
+
+        // Clear timer
+        clearInterval(recordingTimer);
+
+        // Reset UI
+        document.getElementById('timer-seconds').textContent = '00';
+        document.getElementById('timer-progress').style.strokeDashoffset = '339.292';
+        document.querySelector('#audio-length span').textContent = '0s';
+        document.getElementById('recording-indicator').style.display = 'none';
+        document.getElementById('play-audio').disabled = true;
+        document.getElementById('delete-audio').disabled = true;
+        document.getElementById('submit-speaking').disabled = true;
+        document.getElementById('start-recording').disabled = false;
+        document.getElementById('stop-recording').disabled = true;
+
+        // Hide results if showing
+        document.getElementById('results-section').style.display = 'none';
+        document.getElementById('tips-section').style.display = 'block';
+
+        console.log('Recording deleted');
+    }
+}
+
+// Submit speaking for analysis
+async function submitSpeaking() {
+    if (!audioBlob) {
+        alert('Iltimos, avval audio yozing!');
+        return;
+    }
+
+    // Show loading
+    const submitBtn = document.getElementById('submit-speaking');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tahlil qilinmoqda...';
+    submitBtn.disabled = true;
+
+    // Show progress message
+    const progressMsg = document.createElement('div');
+    progressMsg.id = 'progress-message';
+    progressMsg.innerHTML = `
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px; margin: 10px 0;">
+            <p><i class="fas fa-cog fa-spin"></i> Audio tahlil qilinmoqda...</p>
+            <p><small>Bu bir necha soniya vaqt olishi mumkin</small></p>
+        </div>
+    `;
+    submitBtn.parentNode.insertBefore(progressMsg, submitBtn.nextSibling);
+
+    try {
+        // WebM ni WAV ga convert qilish
+        console.log('Converting WebM to WAV...');
+        const wavBlob = await convertToWav(audioBlob);
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('speaking_id', speakingId);
+        formData.append('audio', wavBlob, 'recording.wav');
+
+        console.log('Submitting to server...');
+
+        const response = await fetch('/api/process-speaking/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+        console.log('Server response:', result);
+
+        if (result.success) {
+            // Remove progress message
+            if (progressMsg) progressMsg.remove();
+
+            // Display results
+            displayResults(result);
+
+            // Show results section
+            document.getElementById('results-section').style.display = 'block';
+            document.getElementById('tips-section').style.display = 'none';
+
+            // Save attempt ID
+            localStorage.setItem('last_attempt_id', result.attempt_id);
+
+            // Show success message
+            showNotification('Tahlil muvaffaqiyatli yakunlandi!', 'success');
+        } else {
+            throw new Error(result.error || 'Noma\'lum xato');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+
+        // Remove progress message
+        if (progressMsg) progressMsg.remove();
+
+        // Show error
+        showNotification('Xatolik: ' + error.message, 'error');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// WebM to WAV conversion
+async function convertToWav(webmBlob) {
+    return new Promise((resolve) => {
+        // Simple implementation - in production use proper conversion
+        resolve(webmBlob);
+    });
+}
+function animateScore(elementId, target, duration = 1000) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let start = 0;
+    const stepTime = Math.max(Math.floor(duration / target), 20);
+
+    const timer = setInterval(() => {
+        start++;
+        el.textContent = start;
+        if (start >= target) {
+            el.textContent = target;
+            clearInterval(timer);
+        }
+    }, stepTime);
+}
+function animateProgressCircle(selector, score) {
+    const circle = document.querySelector(selector);
+    if (!circle) return;
+
+    const percentage = Math.min(score, 100);
+    circle.style.background = `
+        conic-gradient(#3498db ${percentage * 3.6}deg, #eee 0deg)
+    `;
+}
+
+function updateScoreDescription(elementId, score, type = 'overall') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let text = 'Yaxshi';
+
+    if (score >= 80) text = 'A’lo daraja';
+    else if (score >= 60) text = 'Yaxshi';
+    else text = 'Yaxshilash kerak';
+
+    el.textContent = text;
+}
+function updateSuggestions(suggestions) {
+    const container = document.getElementById('suggestions-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!suggestions.length) {
+        container.innerHTML = '<div class="suggestion-item">Takliflar mavjud emas</div>';
+        return;
+    }
+
+    suggestions.forEach(text => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.innerHTML = `<i class="fas fa-lightbulb"></i> ${text}`;
+        container.appendChild(div);
+    });
+}
+function updateScoreCircle(circleId, score) {
+    const circle = document.getElementById(circleId);
+    if (!circle) return;
+
+    const percent = Math.min(score, 100);
+    const hue = percent * 1.2; // 0–120 (red → green)
+
+    circle.style.background = `
+        conic-gradient(
+            hsl(${hue}, 70%, 50%) ${percent * 3.6}deg,
+            #eee 0deg
+        )
+    `;
+}
+
+// Display results function (o'zgarmagan)
+function displayResults(result) {
+    console.log("Displaying results:", result);
+
+    // Update transcript
+    document.getElementById('ai-feedback-text').textContent = result.feedback || 'Tahlil mavjud emas';
+
+    // Update scores with animations
+    const scores = result.scores || {};
+
+    console.log("Scores:", scores);
+
+    // Animate overall score
+    animateScore('overall-score', scores.overall || 0, 1000);
+    updateScoreCircle('overall-score-circle', scores.overall || 0);
+    updateScoreDescription('overall-description', scores.overall || 0);
+
+    // Animate individual scores
+    animateScore('fluency-score', scores.fluency || 0, 1200);
+    animateProgressCircle('fluency-progress .progress-circle', scores.fluency || 0);
+    updateScoreDescription('fluency-description', scores.fluency || 0, 'fluency');
+
+    animateScore('vocabulary-score', scores.vocabulary || 0, 1400);
+    animateProgressCircle('vocabulary-progress .progress-circle', scores.vocabulary || 0);
+    updateScoreDescription('vocabulary-description', scores.vocabulary || 0, 'vocabulary');
+
+    animateScore('grammar-score', scores.grammar || 0, 1600);
+    animateProgressCircle('grammar-progress .progress-circle', scores.grammar || 0);
+    updateScoreDescription('grammar-description', scores.grammar || 0, 'grammar');
+
+    animateScore('pronunciation-score', scores.pronunciation || 0, 1800);
+    animateProgressCircle('pronunciation-progress .progress-circle', scores.pronunciation || 0);
+    updateScoreDescription('pronunciation-description', scores.pronunciation || 0, 'pronunciation');
+
+    // Update suggestions
+    const suggestions = result.suggestions || [];
+    updateSuggestions(suggestions);
+
+    // Load AI voice if available
+    if (result.tts_audio_url) {
+        console.log("Loading AI voice:", result.tts_audio_url);
+        loadAIVoice(result.tts_audio_url);
+    } else {
+        console.log("No TTS audio URL available");
+    }
+}
+
+// AI Voice functions (o'zgarmagan)
+let aiVoiceAudio = null;
+let isAIVoicePlaying = false;
+let voiceVisualizerInterval = null;
+
+function loadAIVoice(audioUrl) {
+    if (aiVoiceAudio) {
+        aiVoiceAudio.pause();
+        aiVoiceAudio = null;
+    }
+
+    aiVoiceAudio = new Audio(audioUrl);
+    aiVoiceAudio.preload = 'auto';
+
+    aiVoiceAudio.addEventListener('loadeddata', function() {
+        console.log('AI voice loaded');
+        document.getElementById('play-ai-voice').disabled = false;
+        document.getElementById('play-ai-voice').innerHTML = '<i class="fas fa-play"></i> AI Tahlilini Tinglash';
+    });
+
+    aiVoiceAudio.addEventListener('error', function(e) {
+        console.error('AI voice error:', e);
+        document.getElementById('play-ai-voice').disabled = true;
+        document.getElementById('play-ai-voice').innerHTML = '<i class="fas fa-times"></i> Audio yuklanmadi';
+    });
+
+    aiVoiceAudio.addEventListener('timeupdate', function() {
+        const currentTime = formatTime(this.currentTime);
+        const duration = formatTime(this.duration);
+        document.getElementById('voice-time').textContent = `${currentTime} / ${duration}`;
+    });
+
+    aiVoiceAudio.addEventListener('play', function() {
+        isAIVoicePlaying = true;
+        document.getElementById('play-ai-voice').style.display = 'none';
+        document.getElementById('pause-ai-voice').style.display = 'inline-flex';
+        startVoiceVisualizer();
+    });
+
+    aiVoiceAudio.addEventListener('pause', function() {
+        isAIVoicePlaying = false;
+        document.getElementById('play-ai-voice').style.display = 'inline-flex';
+        document.getElementById('pause-ai-voice').style.display = 'none';
+        stopVoiceVisualizer();
+    });
+
+    aiVoiceAudio.addEventListener('ended', function() {
+        isAIVoicePlaying = false;
+        document.getElementById('play-ai-voice').style.display = 'inline-flex';
+        document.getElementById('pause-ai-voice').style.display = 'none';
+        document.getElementById('play-ai-voice').innerHTML = '<i class="fas fa-redo"></i> Qayta tinglash';
+        stopVoiceVisualizer();
+    });
+}
+
+function playAIVoice() {
+    if (aiVoiceAudio) {
+        if (aiVoiceAudio.paused) {
+            aiVoiceAudio.play().catch(e => console.error('Play error:', e));
+        } else {
+            aiVoiceAudio.currentTime = 0;
+            aiVoiceAudio.play().catch(e => console.error('Play error:', e));
+        }
+    }
+}
+
+function pauseAIVoice() {
+    if (aiVoiceAudio) {
+        aiVoiceAudio.pause();
+    }
+}
+
+// Helper functions
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div style="position: fixed; top: 20px; right: 20px; padding: 15px 25px;
+                    background: ${type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#3498db'};
+                    color: white; border-radius: 5px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+            <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+            ${message}
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Speaking page loaded');
+
+    // Set max recording time
+    maxRecordingTime = {{ speaking.target_duration }};
+    console.log('Max recording time:', maxRecordingTime, 'seconds');
+
+    // Check browser support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Uzr, brauzeringiz audio yozishni qo\'llab-quvvatlamaydi! Chrome yoki Firefox bilan urinib ko\'ring.');
+        document.getElementById('start-recording').disabled = true;
+    }
+
+    // Check for previous attempt
+    const lastAttemptId = localStorage.getItem('last_attempt_id');
+    if (lastAttemptId) {
+        console.log('Found previous attempt:', lastAttemptId);
+    }
+});
+</script>
+<style>
+/* SPEAKING SPECIFIC STYLES */
+.speaking-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin: 30px 0;
+}
+
+.speaking-left, .speaking-right {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Instruction Section */
+.instruction-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    border-left: 5px solid #3498db;
+}
+
+.instruction-box {
+    margin-top: 15px;
+}
+
+.instruction-content p {
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.example-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border-left: 4px solid #9b59b6;
+}
+
+.example-section h4 {
+    color: #9b59b6;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.example-text {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    line-height: 1.6;
+}
+
+.questions-section {
+    margin-top: 25px;
+}
+
+.questions-list {
+    margin-left: 20px;
+}
+
+.questions-list li {
+    margin-bottom: 15px;
+    padding-left: 10px;
+}
+
+.questions-list li strong {
+    color: #2c3e50;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.hints {
+    color: #666;
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-top: 5px;
+    border-left: 3px solid #f39c12;
+}
+
+/* Recording Section */
+.recording-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    border-left: 5px solid #e74c3c;
+}
+
+.recording-box {
+    margin-top: 20px;
+}
+
+/* Timer Display */
+.timer-display {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.timer-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.timer-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.timer-text span:first-child {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #3498db;
+    display: block;
+    line-height: 1;
+}
+
+.timer-label {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Recording Controls */
+.recording-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.recording-controls button {
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.recording-controls button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.recording-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-record-start {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    grid-column: span 2;
+}
+
+.btn-record-stop {
+    background: #2c3e50;
+    color: white;
+}
+
+.btn-play {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-delete {
+    background: #e74c3c;
+    color: white;
+}
+
+/* Recording Status */
+.recording-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.recording-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.recording-dot {
+    width: 12px;
+    height: 12px;
+    background: #e74c3c;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.audio-length {
+    color: #666;
+    font-weight: 600;
+}
+
+/* Results Section (Right Column) */
+.previous-attempts, .results-section, .tips-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+/* Previous Attempts */
+.attempts-list {
+    margin-top: 15px;
+}
+
+.attempt-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.attempt-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+    border-left-color: #3498db;
+}
+
+.attempt-date {
+    flex: 1;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.attempt-score {
+    margin: 0 20px;
+}
+
+.score-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+/* speaking_detail.html dagi style qismiga quyidagilarni qo'shing: */
+
+/* Score Cards */
+.score-cards-container {
+    margin: 30px 0;
+}
+
+.score-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.score-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 2px solid #f8f9fa;
+}
+
+.score-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.overall-score-card {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.score-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.score-card-header i {
+    font-size: 1.5em;
+}
+
+.score-circle-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: conic-gradient(#3498db 0deg, #f0f0f0 0deg);
+    transition: background 1s ease-in-out;
+}
+
+.score-number-large {
+    font-size: 2.5em;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    position: relative;
+    background: conic-gradient(var(--score-color, #3498db) calc(var(--score, 0) * 3.6deg), #f0f0f0 0deg);
+    transition: background 1s ease-in-out;
+}
+
+.progress-circle.animating {
+    animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.progress-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.score-description {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 10px;
+}
+
+.overall-score-card .score-description {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* AI Voice Section */
+.ai-voice-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin: 30px 0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    border-left: 5px solid #3498db;
+}
+
+.voice-player {
+    margin: 20px 0;
+}
+
+.voice-visualizer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 80px;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.voice-bar {
+    width: 12px;
+    height: 20%;
+    background: #95a5a6;
+    border-radius: 6px;
+    transition: height 0.2s, background 0.2s;
+}
+
+.voice-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.btn-voice-play, .btn-voice-pause {
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-voice-play {
+    background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+    color: white;
+}
+
+.btn-voice-pause {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
+.btn-voice-play:hover, .btn-voice-pause:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.voice-time {
+    font-family: 'Courier New', monospace;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #2c3e50;
+    padding: 8px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    min-width: 120px;
+    text-align: center;
+}
+
+.voice-transcript {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.voice-transcript h5 {
+    margin-top: 0;
+    color: #3498db;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.transcript-text {
+    line-height: 1.6;
+    color: #333;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+/* Suggestions */
+.suggestions-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-top: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    border-left: 5px solid #f39c12;
+}
+
+.suggestions-list {
+    margin-top: 20px;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #3498db;
+    transition: transform 0.3s;
+}
+
+.suggestion-item:hover {
+    transform: translateX(5px);
+    background: #e9ecef;
+}
+
+.suggestion-number {
+    background: #3498db;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.suggestion-content {
+    flex: 1;
+    line-height: 1.5;
+    color: #333;
+}
+
+/* Color coding for scores */
+.score-card:nth-child(2) { border-top: 4px solid #e74c3c; } /* Fluency */
+.score-card:nth-child(3) { border-top: 4px solid #3498db; } /* Vocabulary */
+.score-card:nth-child(4) { border-top: 4px solid #9b59b6; } /* Grammar */
+.score-card:nth-child(5) { border-top: 4px solid #2ecc71; } /* Pronunciation */
+
+/* Responsive */
+@media (max-width: 768px) {
+    .score-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .voice-controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .btn-voice-play, .btn-voice-pause {
+        width: 100%;
+        justify-content: center;
+    }
+}
+.attempt-details {
+    display: flex;
+    gap: 15px;
+}
+
+.detail-item {
+    text-align: center;
+}
+
+.detail-label {
+    display: block;
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.detail-value {
+    display: block;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Score Overview */
+.score-overview {
+    margin: 20px 0;
+}
+
+.overall-score {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.overall-number {
+    font-size: 4em;
+    font-weight: bold;
+    color: #3498db;
+    line-height: 1;
+}
+
+.overall-label {
+    color: #666;
+    font-size: 1.1em;
+    margin-top: 5px;
+}
+
+.score-breakdown {
+    display: grid;
+    gap: 15px;
+}
+
+.score-item {
+    display: grid;
+    grid-template-columns: 100px 1fr 50px;
+    align-items: center;
+    gap: 15px;
+}
+
+.score-label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.score-bar {
+    height: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #2ecc71);
+    border-radius: 5px;
+    transition: width 1s ease-in-out;
+}
+
+.score-number {
+    text-align: right;
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+/* Transcript & Feedback */
+.transcript-section, .feedback-section {
+    margin-top: 30px;
+}
+
+.transcript-box {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 10px;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+}
+
+.feedback-box, .suggestions-box {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.feedback-content, .suggestions-content {
+    line-height: 1.6;
+    margin-top: 10px;
+}
+
+.suggestions-box {
+    background: #e8f4f8;
+    border-color: #3498db;
+}
+
+/* Tips Section */
+.tips-list {
+    margin-top: 15px;
+}
+
+.tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border-left: 4px solid #f39c12;
+}
+
+.tip-item i {
+    font-size: 1.5em;
+    color: #f39c12;
+    margin-top: 3px;
+}
+
+.tip-content h5 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+.tip-content p {
+    margin: 0;
+    color: #666;
+    font-size: 0.95em;
+}
+
+/* Navigation Buttons */
+.navigation-buttons {
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.nav-left, .nav-right {
+    display: flex;
+    gap: 15px;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .speaking-container {
+        grid-template-columns: 1fr;
+    }
+
+    .recording-controls {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .btn-record-start {
+        grid-column: span 4;
+    }
+}
+
+@media (max-width: 768px) {
+    .recording-controls {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .btn-record-start {
+        grid-column: span 2;
+    }
+
+    .attempt-item {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .attempt-details {
+        justify-content: center;
+    }
+
+    .score-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 5px;
+    }
+
+    .navigation-buttons {
+        flex-direction: column;
+        gap: 15px;<!-- RESULTS SECTION -->
+    }
+
+    .nav-left, .nav-right {
+        flex-direction: column;
+    }
+}
+
+/* Submit Button */
+.submit-section {
+    text-align: center;
+}
+
+.submit-section .btn-primary {
+    padding: 15px 40px;
+    font-size: 1.1em;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.submit-section .btn-primary:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.submit-section .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.result-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.result-actions button {
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.name }} - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="course-header">
+    <div class="container">
+        <h1>{{ course.name }}</h1>
+        <p>{{ course.description }}</p>
+        <div class="course-stats">
+        <span><i class="fas fa-book"></i> {{ modules.count }} modul</span>
+        <span><i class="fas fa-play-circle"></i> {{ total_video_lessons }} video dars</span>
+        <span><i class="fas fa-headphones"></i> {{ total_listening_lessons }} listening</span>
+    </div>
+    </div>
+</div>
+
+<div class="modules-container">
+    <div class="container">
+        <h2 class="section-title">Kurs Modullari</h2>
+
+        {% if modules %}
+            <div class="modules-grid">
+                {% for module in modules %}
+                <div class="module-card">
+                    <div class="module-number">{{ module.order }}</div>
+                    <h3>{{ module.title }}</h3>
+                    <p>{{ module.description|default:"Modul haqida ma'lumot" }}</p>
+
+                    <div class="module-stats">
+                        <span><i class="fas fa-video"></i> {{ module.lessons.count }} dars</span>
+                        {% if module.lessons.count > 0 %}
+                            <a href="{% url 'module_detail' module.id %}" class="btn-module">
+                                Ko'rish <i class="fas fa-arrow-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-modules">
+                <i class="fas fa-book-open"></i>
+                <h3>Bu kursda hali modullar mavjud emas</h3>
+                <p>Tez orada modullar qo'shiladi</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+<!-- templates/partials/listening_multiple_choice.html -->
+{% load custom_filters %}
+
+<div class="multiple-choice-section">
+    <h3><i class="fas fa-list-ul"></i> Multiple Choice Questions</h3>
+
+    {% if questions %}
+    <form id="listening-form" method="POST" data-listening-id="{{ listening.id }}">
+        {% csrf_token %}
+
+        {% for question in questions %}
+        <div class="question-item" data-question-id="{{ question.id }}">
+            <div class="question-header">
+                <h4>{{ forloop.counter }}. {{ question.question_text }}</h4>
+            </div>
+
+            <div class="choices">
+                {% for option in question.options.all %}
+                <div class="choice-item" onclick="selectOption(this)">
+                    <input type="radio"
+                           name="question_{{ question.id }}"
+                           value="{{ option.id }}"
+                           id="option_{{ question.id }}_{{ option.id }}"
+                           required
+                           onchange="updateSelection(this)">
+                    <label for="option_{{ question.id }}_{{ option.id }}">
+                        <span class="option-letter">{{ option.option_letter }})</span>
+                        {{ option.option_text }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="submit-section">
+            <button type="button" onclick="submitListeningTest()" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Testni topshirish
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i> Bu listening uchun savollar hali qo'shilmagan.
+    </div>
+    {% endif %}
+</div>

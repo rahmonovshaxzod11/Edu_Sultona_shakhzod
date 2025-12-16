@@ -1,0 +1,1258 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ listening.title }} - Listening - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="lesson-header">
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="{% url 'home' %}">Bosh sahifa</a> >
+            <a href="{% url 'course_detail' module.course.id %}">{{ course.name }}</a> >
+            <a href="{% url 'module_detail' module.id %}">{{ module.title }}</a> >
+            <span>{{ listening.title }}</span>
+        </nav>
+
+        <h1><i class="fas fa-headphones"></i> {{ listening.title }}</h1>
+        <div class="lesson-meta">
+            <span><i class="fas fa-clock"></i> {{ listening.timer_minutes }} daqiqa</span>
+            <span><i class="fas fa-book"></i> {{ listening.get_listening_type_display }}</span>
+            {% if completed %}
+                <span class="completed-badge"><i class="fas fa-check-circle"></i> Yakunlandi</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="listening-content">
+    <div class="container">
+        <!-- AUDIO PLAYER -->
+        <div class="audio-section">
+            <h3><i class="fas fa-headphones-alt"></i> Listening Audio</h3>
+
+            <div class="audio-player">
+                <audio id="listening-audio" controls>
+                    <source src="{{ listening.audio_file.url }}" type="audio/mpeg">
+                    Sizning brauzeringiz audio elementini qo'llab-quvvatlamaydi.
+                </audio>
+
+                <div class="audio-controls">
+                    <button onclick="playAudio()" class="btn-primary">
+                        <i class="fas fa-play"></i> Play
+                    </button>
+                    <button onclick="pauseAudio()" class="btn-secondary">
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <a href="{{ listening.audio_file.url }}" download class="btn-download">
+                        <i class="fas fa-download"></i> Yuklab olish
+                    </a>
+
+                    {% if listening.timer_minutes > 0 %}
+                    <button onclick="startTimer()" class="btn-timer">
+                        <i class="fas fa-stopwatch"></i> Timer boshlash ({{ listening.timer_minutes }}min)
+                    </button>
+                    {% endif %}
+                </div>
+
+                {% if listening.timer_minutes > 0 %}
+                <div class="timer-display" id="timer-display" style="display: none;">
+                    <h4><i class="fas fa-stopwatch"></i> Qolgan vaqt:</h4>
+                    <div id="timer-countdown">{{ listening.timer_minutes }}:00</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- DESCRIPTION -->
+        {% if listening.description %}
+        <div class="description-section">
+            <h3><i class="fas fa-info-circle"></i> Ko'rsatmalar:</h3>
+            <div class="content-box">
+                {{ listening.description|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- LISTENING TYPE CONTENT -->
+        <div class="listening-exercise">
+            {% if listening.listening_type == 'multiple_choice' %}
+                {% include 'partials/listening_multiple_choice.html' %}
+            {% elif listening.listening_type == 'gap_filling' %}
+                {% include 'partials/listening_gap_filling.html' %}
+            {% elif listening.listening_type == 'true_false_not_given' %}
+                {% include 'partials/listening_true_false.html' %}
+            {% elif listening.listening_type == 'matching' %}
+                {% include 'partials/listening_matching.html' %}
+            {% endif %}
+        </div>
+
+        <!-- NAVIGATION -->
+        <div class="navigation-buttons">
+            <div class="nav-left">
+                {% if prev_content %}
+                    {% if prev_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi dars
+                        </a>
+                    {% elif prev_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi listening
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                <a href="{% url 'module_detail' module.id %}" class="btn-secondary">
+                    <i class="fas fa-list"></i> Modulga qaytish
+                </a>
+            </div>
+
+            <div class="nav-right">
+                {% if completed or listening.completed %}
+                    {% if next_content %}
+                        {% if next_content.0 == 'video' %}
+                            <a href="{% url 'lesson_detail' next_content.1.id %}" class="btn-primary">
+                                Keyingi dars <i class="fas fa-arrow-right"></i>
+                            </a>
+                        {% elif next_content.0 == 'listening' %}
+                            <a href="{% url 'listening_detail' next_content.1.id %}" class="btn-primary">
+                                Keyingi listening <i class="fas fa-arrow-right"></i>
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <span class="btn-success">
+                            <i class="fas fa-check"></i> Modul yakunlandi
+                        </span>
+                    {% endif %}
+                {% else %}
+                    <button onclick="submitListeningTest()" class="btn-primary" id="submit-test-btn">
+                        <i class="fas fa-paper-plane"></i> Testni topshirish
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RESULTS -->
+        <div id="results-section" class="results-section" style="display: none;">
+            <div class="results-box">
+                <h3><i class="fas fa-chart-bar"></i> Test natijalari:</h3>
+                <div id="results-content"></div>
+
+                <div class="result-actions" id="result-actions">
+                    <!-- Bu yerda natijaga qarab tugmalar chiqadi -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// Audio functions
+const audio = document.getElementById('listening-audio');
+
+function playAudio() {
+    audio.play();
+}
+
+function pauseAudio() {
+    audio.pause();
+}
+
+// Timer functions
+let timerInterval;
+let timerMinutes = {{ listening.timer_minutes }};
+let timerSeconds = 0;
+let timerRunning = false;
+
+function startTimer() {
+    if (timerMinutes <= 0 || timerRunning) return;
+
+    timerRunning = true;
+    document.getElementById('timer-display').style.display = 'block';
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+}
+
+function updateTimer() {
+    if (timerSeconds === 0) {
+        if (timerMinutes === 0) {
+            clearInterval(timerInterval);
+            alert('Vaqt tugadi! Test avtomatik yakunlanadi.');
+            timerRunning = false;
+            submitListeningTest();
+            return;
+        }
+        timerMinutes--;
+        timerSeconds = 59;
+    } else {
+        timerSeconds--;
+    }
+
+    document.getElementById('timer-countdown').textContent =
+        `${timerMinutes}:${timerSeconds < 10 ? '0' : ''}${timerSeconds}`;
+}
+
+// Multiple Choice selection functions
+function selectOption(element) {
+    const radioInput = element.querySelector('input[type="radio"]');
+    if (radioInput) {
+        radioInput.checked = true;
+        updateSelection(radioInput);
+    }
+}
+
+function updateSelection(radioInput) {
+    // Remove selected class from all options in the same question
+    const questionItem = radioInput.closest('.question-item');
+    if (questionItem) {
+        questionItem.querySelectorAll('.choice-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+
+        // Add selected class to current option
+        const currentOption = radioInput.closest('.choice-item');
+        if (currentOption) {
+            currentOption.classList.add('selected');
+        }
+    }
+}
+
+// TFNG selection functions
+function selectTfngOption(element, radioId) {
+    const radioInput = document.getElementById(radioId);
+    if (radioInput) {
+        radioInput.checked = true;
+        updateTfngSelection(radioInput);
+    }
+}
+
+function updateTfngSelection(radioInput) {
+    // Remove selected class from all options in the same question
+    const tfngItem = radioInput.closest('.tfng-item');
+    if (tfngItem) {
+        tfngItem.querySelectorAll('.tfng-option').forEach(item => {
+            item.classList.remove('selected');
+        });
+
+        // Add selected class to current option
+        const currentOption = radioInput.closest('.tfng-option');
+        if (currentOption) {
+            currentOption.classList.add('selected');
+        }
+    }
+}
+
+// Initialize option selection on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Multiple Choice options
+    document.querySelectorAll('.choice-item').forEach(item => {
+        item.addEventListener('click', function() {
+            selectOption(this);
+        });
+    });
+
+    document.querySelectorAll('.choice-item input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateSelection(this);
+        });
+
+        if (radio.checked) {
+            updateSelection(radio);
+        }
+    });
+
+    // TFNG options
+    document.querySelectorAll('.tfng-option').forEach(item => {
+        item.addEventListener('click', function() {
+            // Get radio ID from onclick attribute or find the radio inside
+            const radioInput = this.querySelector('input[type="radio"]');
+            if (radioInput) {
+                radioInput.checked = true;
+                updateTfngSelection(radioInput);
+            }
+        });
+    });
+
+    document.querySelectorAll('.tfng-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateTfngSelection(this);
+        });
+
+        if (radio.checked) {
+            updateTfngSelection(radio);
+        }
+    });
+
+    // Gap filling - add change handlers
+    document.querySelectorAll('.gap-answer-item select').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('.gap-answer-item').classList.add('selected');
+            } else {
+                this.closest('.gap-answer-item').classList.remove('selected');
+            }
+        });
+    });
+
+    // Matching - add change handlers
+    document.querySelectorAll('.answer-item select').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.closest('.answer-item').classList.add('selected');
+            } else {
+                this.closest('.answer-item').classList.remove('selected');
+            }
+        });
+    });
+});
+
+// Submit listening test
+// Submit listening test
+// Submit listening test - YANGI VERSIYA
+async function submitListeningTest() {
+    const form = document.getElementById('listening-form');
+    if (!form) {
+        alert('Test formasi topilmadi!');
+        return;
+    }
+
+    // FormData yaratish
+    const formData = new FormData(form);
+
+    // FormData dan object yaratish
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+
+    console.log('Yuborilayotgan ma\'lumotlar:', data);
+
+    const listeningId = form.dataset.listeningId;
+    console.log('Listening ID:', listeningId);
+
+    // Barcha savollarga javob berilganligini tekshirish
+    let allAnswered = true;
+    const requiredElements = form.querySelectorAll('[required]');
+    const unanswered = [];
+
+    requiredElements.forEach(element => {
+        if (element.type === 'radio') {
+            const name = element.name;
+            const isChecked = form.querySelector(`input[name="${name}"]:checked`);
+            if (!isChecked) {
+                allAnswered = false;
+                unanswered.push(name);
+                const questionItem = element.closest('.question-item, .tfng-item');
+                if (questionItem) {
+                    questionItem.classList.add('not-answered');
+                }
+            }
+        } else if (element.type === 'select-one') {
+            if (!element.value) {
+                allAnswered = false;
+                unanswered.push(element.name);
+                element.closest('.gap-answer-item, .answer-item')?.classList.add('not-answered');
+            }
+        }
+    });
+
+    if (!allAnswered) {
+        alert('Iltimos, barcha savollarga javob bering! ' + unanswered.length + ' ta savolga javob berilmagan.');
+        return;
+    }
+
+    // Loading state
+    const submitBtn = document.getElementById('submit-test-btn') || document.querySelector('.submit-section button');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tekshirilmoqda...';
+    submitBtn.disabled = true;
+
+    try {
+        // YANGI URL - bu ishlashi kerak
+        const url = `/api/submit-listening-test/${listeningId}/`;
+        console.log('Yuborilayotgan URL:', url);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(data)
+        });
+
+        console.log('Response status:', response.status);
+        const result = await response.json();
+        console.log('Server javobi:', result);
+
+        if (result.success) {
+            showResults(result);
+        } else {
+            alert('Xatolik: ' + (result.error || 'Noma\'lum xatolik'));
+            console.error('Server xatoligi:', result);
+        }
+    } catch (error) {
+        console.error('Network error:', error);
+        alert('Server bilan aloqa qilishda xatolik. URL ni tekshiring: /api/submit-listening-test/' + listeningId + '/');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+// listening_detail.html ichiga qo'shing
+function submitMatchingTest() {
+    // Barcha matching formalarni yig'ish
+    const forms = document.querySelectorAll('.matching-form');
+    const data = {};
+
+    // CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Barcha form elementlarini yig'ish
+    forms.forEach(form => {
+        const formData = new FormData(form);
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+    });
+
+    // Loading holat
+    const submitBtn = document.querySelector('.submit-section button');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tekshirilmoqda...';
+    submitBtn.disabled = true;
+
+    // Serverga yuborish
+    fetch(`/api/submit-listening-test/{{ listening.id }}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showResults(result);
+        } else {
+            alert('Xatolik: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Xatolik:', error);
+        alert('Server bilan aloqa qilishda xatolik');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+// Show results
+// Show results
+function showResults(result) {
+    const resultsContent = document.getElementById('results-content');
+    const resultsSection = document.getElementById('results-section');
+    const resultActions = document.getElementById('result-actions');
+
+    let message = '';
+    let actions = '';
+
+    if (result.passed) {
+        message = `
+            <div class="result-success">
+                <div class="result-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3>Tabriklaymiz! Listening testidan o'tdingiz!</h3>
+                <div class="result-stats">
+                    <div class="stat">
+                        <span class="stat-label">To'g'ri javoblar:</span>
+                        <span class="stat-value">${result.correct_answers}/${result.total_questions}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Natija:</span>
+                        <span class="stat-value score-high">${result.score.toFixed(1)}%</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Holat:</span>
+                        <span class="stat-value passed">MUVOFFAQIYATLI</span>
+                    </div>
+                </div>
+                <p class="result-message">50% dan yuqori ball to'plaganingiz uchun keyingi darsga o'tish huquqini qo'lga kiritdingiz!</p>
+            </div>
+        `;
+
+        actions = `
+            <div class="action-buttons">
+                {% if next_content %}
+                    {% if next_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' next_content.1.id %}" class="btn-primary">
+                            <i class="fas fa-arrow-right"></i> Keyingi darsga o'tish
+                        </a>
+                    {% elif next_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' next_content.1.id %}" class="btn-primary">
+                            <i class="fas fa-arrow-right"></i> Keyingi listeningga o'tish
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'module_detail' module.id %}" class="btn-primary">
+                        <i class="fas fa-list"></i> Modulga qaytish
+                    </a>
+                {% endif %}
+            </div>
+        `;
+    } else {
+        message = `
+            <div class="result-fail">
+                <div class="result-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>Testdan o'ta olmadingiz</h3>
+                <div class="result-stats">
+                    <div class="stat">
+                        <span class="stat-label">To'g'ri javoblar:</span>
+                        <span class="stat-value">${result.correct_answers}/${result.total_questions}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Natija:</span>
+                        <span class="stat-value score-low">${result.score.toFixed(1)}%</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Talab:</span>
+                        <span class="stat-value">50%</span>
+                    </div>
+                </div>
+                <p class="result-message">Iltimos, darsni qayta ko'rib chiqing va testni qayta topshiring. Minimal ball: 50%</p>
+            </div>
+        `;
+
+        actions = `
+            <div class="action-buttons">
+                <button onclick="window.location.reload()" class="btn-secondary">
+                    <i class="fas fa-redo"></i> Qayta urinish
+                </button>
+                <a href="{% url 'module_detail' module.id %}" class="btn-secondary">
+                    <i class="fas fa-list"></i> Modulga qaytish
+                </a>
+            </div>
+        `;
+    }
+
+    resultsContent.innerHTML = message;
+    resultActions.innerHTML = actions;
+    resultsSection.style.display = 'block';
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+    // Highlight correct/wrong answers
+    highlightAnswers(result.results);
+}
+
+// Highlight answers
+function highlightAnswers(results) {
+    for (const [key, value] of Object.entries(results)) {
+        const element = document.querySelector(`[name="${key}"]`);
+        if (element) {
+            const parent = element.closest('.choice-item, .tfng-option, .answer-item, .gap-answer-item');
+            if (parent) {
+                parent.classList.remove('selected', 'not-answered');
+                if (value === 'correct') {
+                    parent.classList.add('answered-correct');
+                } else {
+                    parent.classList.add('answered-wrong');
+                }
+            }
+        }
+    }
+}
+
+// Get CSRF token
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+</script>
+
+<style>
+    /* Selection states */
+.choice-item.selected {
+    background: #e3f2fd;
+    border-color: #3498db;
+}
+
+.tfng-option.selected {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.tfng-option.selected.btn-true {
+    background: #1e7e34 !important;
+}
+
+.tfng-option.selected.btn-false {
+    background: #c82333 !important;
+}
+
+.tfng-option.selected.btn-not-given {
+    background: #e0a800 !important;
+}
+
+.gap-answer-item.selected,
+.answer-item.selected {
+    border-color: #3498db;
+}
+
+/* Not answered warning */
+.not-answered {
+    border-color: #ff9800 !important;
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.1) !important;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+}
+/* Comprehensive listening styles */
+.audio-player {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 25px;
+    border-radius: 15px;
+    margin: 25px 0;
+    color: white;
+}
+
+.audio-player audio {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 10px;
+}
+
+.audio-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.audio-controls button, .btn-download, .btn-timer {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.audio-controls button:hover, .btn-download:hover, .btn-timer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.btn-download {
+    background: #28a745;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-timer {
+    background: #ff9800;
+    color: white;
+}
+
+.timer-display {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+#timer-countdown {
+    font-size: 3em;
+    font-weight: bold;
+    color: #ffeb3b;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Exercise sections */
+.listening-exercise {
+    margin-top: 40px;
+}
+
+.question-item, .gap-item, .tfng-item, .matching-item {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+    border-left: 5px solid #3498db;
+}
+
+.gap-item {
+    border-left-color: #9b59b6;
+}
+
+.tfng-item {
+    border-left-color: #e74c3c;
+}
+
+.matching-item {
+    border-left-color: #2ecc71;
+}
+
+.question-header h4, .statement h4 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    line-height: 1.5;
+}
+
+.choices, .tfng-options, .gap-answers {
+    display: grid;
+    gap: 12px;
+}
+
+.choice-item, .tfng-option, .gap-answer-item {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.choice-item:hover, .tfng-option:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.choice-item.selected {
+    background: #e3f2fd;
+    border-color: #3498db;
+}
+/* Matching uchun yangi style */
+.matching-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.column-header {
+    font-weight: bold;
+    padding: 10px;
+    background: #3498db;
+    color: white;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.column-a-items, .column-b-items, .column-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.column-item {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 5px;
+}
+
+.column-a-items .column-item {
+    background: #e3f2fd;
+}
+
+.column-b-items .column-item {
+    background: #f3e5f5;
+}
+
+.answer-item {
+    padding: 12px;
+    background: white;
+    border-radius: 5px;
+    border: 2px solid #ddd;
+    margin-bottom: 10px;
+}
+
+.answer-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.answer-item select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #3498db;
+    border-radius: 5px;
+    font-size: 16px;
+    background: white;
+}
+/* matching.css yoki listening_detail.html ichiga */
+.matching-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+@media (max-width: 992px) {
+    .matching-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.matching-column {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.matching-column h5 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.questions-list, .answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.question-item, .answer-item {
+    padding: 12px;
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.question-item {
+    background: #f8f9fa;
+    border-left: 4px solid #3498db;
+}
+
+.answer-item {
+    background: #f3e5f5;
+    border-left: 4px solid #9b59b6;
+}
+
+.question-number, .answer-letter {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-right: 10px;
+    min-width: 30px;
+    display: inline-block;
+}
+
+.question-text, .answer-text {
+    color: #34495e;
+}
+
+.selection-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #ecf0f1;
+    border-radius: 8px;
+    border: 2px solid #bdc3c7;
+    transition: all 0.3s;
+}
+
+.selection-item:hover {
+    background: #dfe6e9;
+    border-color: #3498db;
+}
+
+.selection-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.form-select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #3498db;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #2c3e50;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.form-select option {
+    padding: 10px;
+}
+
+.instruction-box {
+    background: #e3f2fd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 5px solid #2196f3;
+}
+
+.instruction-box p {
+    margin: 0;
+    color: #0d47a1;
+}
+
+.submit-section {
+    margin-top: 30px;
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.btn-lg {
+    padding: 12px 30px;
+    font-size: 18px;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+.answer-item select:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+.choice-item input[type="radio"], .tfng-option input[type="radio"] {
+    display: none;
+}
+
+.choice-item label, .tfng-option label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin: 0;
+}
+
+.option-letter {
+    font-weight: bold;
+    color: #3498db;
+    min-width: 25px;
+}
+
+/* TFNG specific styles */
+.btn-true, .btn-false, .btn-not-given {
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-true {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-false {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-not-given {
+    background: #f39c12;
+    color: white;
+}
+
+/* Gap filling */
+.gap-text {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    line-height: 1.8;
+}
+
+.gap-answers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.gap-answer-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gap-answer-item select {
+    flex: 1;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+/* Matching table */
+.matching-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.table-header {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    padding: 10px;
+    background: #3498db;
+    color: white;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.table-body {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+}
+
+.column-item, .answer-item {
+    padding: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.column-a-items .column-item {
+    background: #e3f2fd;
+    border-radius: 5px;
+}
+
+.column-b-items .column-item {
+    background: #f3e5f5;
+    border-radius: 5px;
+}
+
+.answer-item select {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+/* Results */
+.results-section {
+    margin-top: 40px;
+}
+
+.results-box {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.result-success {
+    border-top: 5px solid #27ae60;
+    padding: 20px;
+}
+
+.result-fail {
+    border-top: 5px solid #e74c3c;
+    padding: 20px;
+}
+
+.result-icon {
+    font-size: 4em;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.result-icon i {
+    color: #3498db;
+}
+
+.result-success .result-icon i {
+    color: #27ae60;
+}
+
+.result-fail .result-icon i {
+    color: #e74c3c;
+}
+
+.result-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.stat {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.stat-label {
+    display: block;
+    color: #666;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.stat-value {
+    display: block;
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.score-high {
+    color: #27ae60;
+}
+
+.score-low {
+    color: #e74c3c;
+}
+
+.passed {
+    color: #27ae60;
+    background: #d4edda;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+}
+
+.result-message {
+    text-align: center;
+    font-size: 1.1em;
+    color: #555;
+    margin: 20px 0;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+/* Answer highlighting */
+.answered-correct {
+    background: #d4edda !important;
+    border-color: #c3e6cb !important;
+    color: #155724 !important;
+}
+
+.answered-wrong {
+    background: #f8d7da !important;
+    border-color: #f5c6cb !important;
+    color: #721c24 !important;
+}
+
+.not-answered {
+    border-color: #ff9800 !important;
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.1) !important;
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.instruction-box {
+    background: #e3f2fd;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+}
+
+.instruction-box ul {
+    margin: 10px 0 0 20px;
+}
+
+.instruction-box li {
+    margin-bottom: 5px;
+}
+
+.submit-section {
+    margin-top: 30px;
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .audio-controls {
+        flex-direction: column;
+    }
+
+    .audio-controls button, .btn-download, .btn-timer {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .matching-table {
+        grid-template-columns: 1fr;
+    }
+
+    .table-header, .table-body {
+        grid-template-columns: 1fr;
+    }
+
+    .result-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons a, .action-buttons button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .gap-answers {
+        grid-template-columns: 1fr;
+    }
+}
+
+</style>
+{% endblock %}

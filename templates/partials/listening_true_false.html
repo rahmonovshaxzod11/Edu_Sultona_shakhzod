@@ -1,0 +1,62 @@
+<div class="true-false-section">
+    <h3><i class="fas fa-check-double"></i> True/False/Not Given</h3>
+
+    {% if tfng_questions %}
+    <div class="instructions">
+        <div class="instruction-box">
+            <p><strong>Ko'rsatma:</strong> Quyidagi gaplar berilgan passage'ga asoslangan.</p>
+            <ul>
+                <li><strong>TRUE</strong> - agar gap passage'dagi ma'lumotga mos kelsa</li>
+                <li><strong>FALSE</strong> - agar gap passage'dagi ma'lumotga zid bo'lsa</li>
+                <li><strong>NOT GIVEN</strong> - agar passage'da bu haqda ma'lumot bo'lmasa</li>
+            </ul>
+        </div>
+    </div>
+
+    <form id="listening-form" data-listening-id="{{ listening.id }}">
+        {% csrf_token %}
+
+        {% for tfng in tfng_questions %}
+        <div class="tfng-item">
+            <div class="statement">
+                <h4>{{ forloop.counter }}. {{ tfng.statement }}</h4>
+            </div>
+
+            <div class="tfng-options">
+                <div class="tfng-option">
+                    <input type="radio" name="tfng_{{ tfng.id }}" value="true" id="tfng_{{ tfng.id }}_true" required>
+                    <label for="tfng_{{ tfng.id }}_true" class="btn-true">
+                        <i class="fas fa-check"></i> TRUE
+                    </label>
+                </div>
+
+                <div class="tfng-option" onclick="selectTfngOption(this, 'tfng_{{ tfng.id }}_false')">
+                    <input type="radio" name="tfng_{{ tfng.id }}" value="false" id="tfng_{{ tfng.id }}_false" required>
+                    <label for="tfng_{{ tfng.id }}_false" class="btn-false">
+                        <i class="fas fa-times"></i> FALSE
+                    </label>
+                </div>
+
+                <div class="tfng-option" onclick="selectTfngOption(this, 'tfng_{{ tfng.id }}_not_given')">
+                    <input type="radio" name="tfng_{{ tfng.id }}" value="not_given" id="tfng_{{ tfng.id }}_not_given" required>
+                    <label for="tfng_{{ tfng.id }}_not_given" class="btn-not-given">
+                        <i class="fas fa-question"></i> NOT GIVEN
+                    </label>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="submit-section">
+            <button type="button" onclick="submitListeningTest()" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Testni topshirish
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i> Bu listening uchun True/False/Not Given savollari hali qo'shilmagan.
+    </div>
+    {% endif %}
+</div>
+

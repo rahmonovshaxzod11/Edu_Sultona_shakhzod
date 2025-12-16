@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Ro'yxatdan o'tish - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h2><i class="fas fa-user-plus"></i> Yangi akkaunt yaratish</h2>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="id_username"><i class="fas fa-user"></i> Foydalanuvchi nomi</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="error">{{ form.username.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password1"><i class="fas fa-lock"></i> Parol</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                <div class="error">{{ form.password1.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password2"><i class="fas fa-lock"></i> Parolni tasdiqlash</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                <div class="error">{{ form.password2.errors }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-primary btn-block">
+                <i class="fas fa-user-plus"></i> Ro'yxatdan o'tish
+            </button>
+
+            <div class="auth-links">
+                <p>Akkauntingiz bormi? <a href="{% url 'login' %}">Tizimga kiring</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    .error {
+        color: red;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}

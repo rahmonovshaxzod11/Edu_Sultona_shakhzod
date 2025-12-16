@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.title }} - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="lesson-header">
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="{% url 'home' %}">Bosh sahifa</a> >
+            <a href="{% url 'course_detail' module.course.id %}">{{ course.name }}</a> >
+            <a href="{% url 'module_detail' module.id %}">{{ module.title }}</a> >
+            <span>{{ lesson.title }}</span>
+        </nav>
+
+        <h1>{{ lesson.title }}</h1>
+        <div class="lesson-meta">
+            <span><i class="fas fa-clock"></i> {{ lesson.duration|default:"15:00" }}</span>
+            <span><i class="fas fa-book"></i> {{ module.title }}</span>
+            {% if video_type == 'file' %}
+                <span class="video-type-badge file-badge"><i class="fas fa-file-video"></i> Lokal video</span>
+            {% elif video_type == 'youtube' %}
+                <span class="video-type-badge youtube-badge"><i class="fab fa-youtube"></i> YouTube</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="lesson-content">
+    <div class="container">
+        <!-- VIDEO SECTION -->
+        <div class="video-section">
+            <h3><i class="fas fa-video"></i> Video dars</h3>
+
+            {% if video_type == 'file' and lesson.video_file %}
+                <!-- LOKAL VIDEO -->
+                <div class="video-container">
+                    <video id="lesson-video" width="100%" height="500" controls controlsList="nodownload">
+                        <source src="{{ lesson.video_file.url }}" type="video/mp4">
+                        Sizning brauzeringiz video elementini qo'llab-quvvatlamaydi.
+                    </video>
+                </div>
+
+
+            {% elif video_type == 'youtube' and youtube_id %}
+                <!-- YOUTUBE VIDEO -->
+                <div class="video-container">
+                    <iframe width="100%" height="500"
+                            src="https://www.youtube.com/embed/{{ youtube_id }}"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <p class="video-link">
+                    <a href="https://www.youtube.com/watch?v={{ youtube_id }}" target="_blank" rel="noopener">
+                        <i class="fab fa-youtube"></i> YouTubeda ko'rish
+                    </a>
+                </p>
+
+            {% elif video_type == 'external' and lesson.video_url %}
+                <!-- TASHQI VIDEO LINK -->
+                <div class="external-video">
+                    <div class="alert alert-info">
+                        <i class="fas fa-external-link-alt"></i>
+                        <p>Video tashqi manbada joylashgan. Quyidagi havola orqali ochishingiz mumkin:</p>
+                        <a href="{{ lesson.video_url }}" target="_blank" class="btn-external">
+                            <i class="fas fa-play-circle"></i> Videoni ochish
+                        </a>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- VIDEO YO'Q -->
+                <div class="no-video">
+                    <i class="fas fa-video-slash"></i>
+                    <h3>Video hozircha mavjud emas</h3>
+                    <p>Tez orada video qo'shiladi</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- DARS MATNI -->
+        {% if lesson.content %}
+        <div class="lesson-text">
+            <h3><i class="fas fa-file-alt"></i> Dars mazmuni:</h3>
+            <div class="content-box">
+                {{ lesson.content|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- TEST SECTION -->
+        {% if questions %}
+        <div class="test-section">
+            <h3><i class="fas fa-question-circle"></i> Bilimni tekshirish</h3>
+            <div class="test-container">
+                <p class="test-info">Testda {{ questions.count }} ta savol bor. 70% dan yuqori ball olsangiz, keyingi darsga o'tasiz.</p>
+
+                <form id="test-form" data-lesson-id="{{ lesson.id }}">
+                    {% csrf_token %}
+                    {% for question in questions %}
+                    <div class="question-item" data-question-id="{{ question.id }}" data-question-type="{{ question.question_type }}">
+                        <h4>{{ forloop.counter }}. {{ question.question_text }}</h4>
+
+                        {% if question.question_type == 'single' %}
+                            {% for answer in question.answers.all %}
+                            <div class="answer-option">
+                                <input type="radio"
+                                       name="question_{{ question.id }}"
+                                       value="{{ answer.id }}"
+                                       id="answer_{{ question.id }}_{{ answer.id }}"
+                                       required>
+                                <label for="answer_{{ question.id }}_{{ answer.id }}">
+                                    {{ answer.answer_text }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="test-submit">
+                        <button type="submit" class="btn-primary btn-test">
+                            <i class="fas fa-paper-plane"></i> Testni topshirish
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- SAVOL YOLLASH -->
+        <div class="question-form-section">
+            <h3><i class="fas fa-question"></i> Savolingiz bormi?</h3>
+            <div class="question-box">
+                <form id="question-form" data-lesson-id="{{ lesson.id }}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <textarea name="question_text"
+                                  placeholder="Dars haqida savolingizni yozing. Administrator javob beradi..."
+                                  rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn-secondary">
+                        <i class="fas fa-paper-plane"></i> Savol yuborish
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- NAVIGATSIYA -->
+        <div class="navigation-buttons">
+            <div class="nav-left">
+                {% if prev_content %}
+                    {% if prev_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi dars
+                        </a>
+                    {% elif prev_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi listening
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                <a href="{% url 'module_detail' module.id %}" class="btn-secondary">
+                    <i class="fas fa-list"></i> Modulga qaytish
+                </a>
+            </div>
+
+            <div class="nav-right">
+                {% if next_content %}
+                    {% if next_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi dars <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi listening <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% endif %}
+                {% elif completed %}
+                    <span class="btn-success">
+                        <i class="fas fa-check"></i> Dars yakunlandi
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TEST NATIJASI -->
+        <div id="test-result" class="test-result-container" style="display: none;"></div>
+    </div>
+</div>
+
+<script>
+// Test yuborish
+document.getElementById('test-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitTest(this);
+});
+
+// Savol yuborish
+document.getElementById('question-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitQuestion(this);
+});
+
+// Test yuborish funksiyasi
+async function submitTest(form) {
+    const formData = new FormData(form);
+    const lessonId = form.dataset.lessonId;
+    const answers = [];
+
+    // Barcha savollarni yig'ish
+    const questions = form.querySelectorAll('.question-item');
+
+    // Har bir savol uchun javob yig'ish
+    questions.forEach(question => {
+        const questionId = question.dataset.questionId;
+        const questionType = question.dataset.questionType;
+
+        if (questionType === 'single') {
+            const selected = question.querySelector('input[type="radio"]:checked');
+            if (selected) {
+                answers.push({
+                    question_id: questionId,
+                    answer: selected.value
+                });
+            }
+        }
+    });
+
+    // Barcha savollarga javob berilganligini tekshirish
+    if (answers.length !== questions.length) {
+        alert('Iltimos, barcha savollarga javob bering!');
+        return;
+    }
+
+    // Loading ko'rsatish
+    const submitBtn = form.querySelector('.btn-test');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tekshirilmoqda...';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await fetch(`/api/submit-test/${lessonId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ answers: answers })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showTestResult(result);
+            // Agar testdan o'tgan bo'lsa, sahifani yangilash
+            if (result.passed) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            }
+        } else {
+            alert('Testni yuborishda xatolik: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Server bilan aloqa qilishda xatolik yuz berdi.');
+    } finally {
+        // Buttonni qayta faollashtirish
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// Test natijasini ko'rsatish
+function showTestResult(result) {
+    const resultDiv = document.getElementById('test-result');
+    resultDiv.style.display = 'block';
+
+    if (result.passed) {
+        resultDiv.innerHTML = `
+            <div class="result-success">
+                <div class="result-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3>Tabriklaymiz! Testdan o'tdingiz!</h3>
+                <div class="result-stats">
+                    <div class="stat">
+                        <span class="stat-label">To'g'ri javoblar:</span>
+                        <span class="stat-value">${result.correct_answers}/${result.total_questions}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Natija:</span>
+                        <span class="stat-value score-high">${result.score.toFixed(1)}%</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Holat:</span>
+                        <span class="stat-value passed">MUVOFFAQIYATLI</span>
+                    </div>
+                </div>
+                <p class="result-message">Siz keyingi darsga o'tish huquqini qo'lga kiritdingiz!</p>
+                <div class="result-actions">
+                    <button onclick="window.location.reload()" class="btn-primary">
+                        <i class="fas fa-redo"></i> Davom etish
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        resultDiv.innerHTML = `
+            <div class="result-fail">
+                <div class="result-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>Testdan o'ta olmadingiz</h3>
+                <div class="result-stats">
+                    <div class="stat">
+                        <span class="stat-label">To'g'ri javoblar:</span>
+                        <span class="stat-value">${result.correct_answers}/${result.total_questions}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Natija:</span>
+                        <span class="stat-value score-low">${result.score.toFixed(1)}%</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Talab:</span>
+                        <span class="stat-value">70%</span>
+                    </div>
+                </div>
+                <p class="result-message">Iltimos, darsni qayta ko'rib chiqing va testni qayta topshiring.</p>
+                <div class="result-actions">
+                    <button onclick="window.location.reload()" class="btn-secondary">
+                        <i class="fas fa-redo"></i> Qayta urinish
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Scroll to result
+    resultDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Savol yuborish
+async function submitQuestion(form) {
+    const formData = new FormData(form);
+    const lessonId = form.dataset.lessonId;
+    const questionText = formData.get('question_text');
+
+    if (!questionText.trim()) {
+        alert('Iltimos, savol matnini kiriting!');
+        return;
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/submit-question/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                lesson_id: lessonId,
+                question_text: questionText
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('✅ Savolingiz muvaffaqiyatli yuborildi! Administrator tez orada javob beradi.');
+            form.reset();
+        } else {
+            alert('❌ Savol yuborishda xatolik: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Server bilan aloqa qilishda xatolik yuz berdi.');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// CSRF token olish
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+
+// DOM yuklanganda
+document.addEventListener('DOMContentLoaded', function() {
+    // Radio buttonlar uchun click effect
+    document.querySelectorAll('.answer-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('click', function() {
+            const questionItem = this.closest('.question-item');
+            questionItem.querySelectorAll('.answer-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            this.parentElement.classList.add('selected');
+        });
+    });
+
+    // Checkboxlar uchun click effect
+    document.querySelectorAll('.answer-option input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                this.parentElement.classList.add('selected');
+            } else {
+                this.parentElement.classList.remove('selected');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

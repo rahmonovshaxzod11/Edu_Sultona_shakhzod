@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Kirish - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h2><i class="fas fa-sign-in-alt"></i> Tizimga kirish</h2>
+        
+        {% if form.errors %}
+        <div class="alert alert-error">
+            Login yoki parol noto'g'ri. Iltimos, qayta urinib ko'ring.
+        </div>
+        {% endif %}
+        
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_username"><i class="fas fa-user"></i> Foydalanuvchi nomi</label>
+                <input type="text" name="username" id="id_username" required class="form-control" placeholder="Foydalanuvchi nomingiz">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_password"><i class="fas fa-lock"></i> Parol</label>
+                <input type="password" name="password" id="id_password" required class="form-control" placeholder="Parolingiz">
+            </div>
+            
+            <button type="submit" class="btn-primary btn-block">
+                <i class="fas fa-sign-in-alt"></i> Kirish
+            </button>
+            
+            <div class="auth-links">
+                <p>Akkauntingiz yo'qmi? <a href="{% url 'register' %}">Ro'yxatdan o'ting</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

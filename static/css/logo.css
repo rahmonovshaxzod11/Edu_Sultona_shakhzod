@@ -1,0 +1,41 @@
+.hero-logo {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.hero-logo-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.hero-logo-ss {
+    font-size: 36px;
+    font-weight: 900;
+    color: white;
+}
+
+.hero-title {
+    font-size: 48px;
+    font-weight: 900;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.hero-title .highlight {
+    color: #3498db;
+}
+
+.hero-subtitle {
+    font-size: 20px;
+    color: #7f8c8d;
+    max-width: 600px;
+    margin: 0 auto;
+}

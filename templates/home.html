@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h2>Kelajagingizni bugundan quring!</h2>
+            <p>O'zbekistonning eng sifatli onlayn ta'lim platformasida bilim oling</p>
+            {% if not user.is_authenticated %}
+                <a href="{% url 'register' %}" class="btn-primary">
+                    <i class="fas fa-user-plus"></i> Ro'yxatdan o'tish
+                </a>
+            {% else %}
+                <a href="#courses" class="btn-primary">Kurslarni ko'rish</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<section id="courses" class="courses-section">
+    <div class="container">
+        <h2 class="section-title">Bizning Kurslarimiz</h2>
+
+        <div class="courses-grid">
+            <!-- Ingliz tili kursi -->
+            <div class="course-card">
+                <div class="course-icon">
+                    <i class="fas fa-language"></i>
+                </div>
+                <h3>Ingliz tili</h3>
+                <p>Boshlang'ichdan IELTS darajasigacha ingliz tilini o'rganing.</p>
+                <a href="{% url 'course_detail' 1 %}" class="btn-secondary">Kursni ko'rish</a>
+            </div>
+
+            <!-- Data Science va Sun'iy Intellekt -->
+            <div class="course-card featured">
+                <div class="course-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>Data Science va Sun'iy Intellekt</h3>
+                <p>Zamonaviy Data Science va Sun'iy Intellekt texnologiyalarini o'rganing.</p>
+                <a href="{% url 'course_detail' 2 %}" class="btn-primary">Kursni ko'rish</a>
+            </div>
+
+            <!-- Pedagogika -->
+            <div class="course-card">
+                <div class="course-icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <h3>Pedagogika</h3>
+                <p>Zamonaviy pedagogik usullar va o'qitish metodologiyalarini o'rganing.</p>
+                <a href="{% url 'course_detail' 3 %}" class="btn-secondary">Kursni ko'rish</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

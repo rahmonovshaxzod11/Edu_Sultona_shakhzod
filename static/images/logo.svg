@@ -1,0 +1,22 @@
+<!-- /static/images/logo.svg -->
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+
+    <!-- Background square -->
+    <rect x="10" y="10" width="40" height="40" rx="8" fill="url(#gradient)"/>
+
+    <!-- SS letters -->
+    <text x="30" y="35" font-family="Arial, sans-serif" font-weight="bold"
+          font-size="20" fill="white" text-anchor="middle">SS</text>
+
+    <!-- FUTURE SKILLS text -->
+    <text x="70" y="25" font-family="Arial, sans-serif" font-weight="800"
+          font-size="18" fill="#2c3e50">FUTURE</text>
+    <text x="70" y="45" font-family="Arial, sans-serif" font-weight="800"
+          font-size="18" fill="#3498db">SKILLS</text>
+</svg>

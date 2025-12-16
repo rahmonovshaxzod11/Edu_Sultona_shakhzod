@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}eduSultonawithShaxzod{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <a href="{% url 'home' %}" class="logo">
+                    <div class="logo-minimal">
+                        <span class="logo-symbol">SS</span>
+                        <div class="logo-name">
+                            <span class="logo-future">FUTURE</span>
+                            <span class="logo-skills">SKILLS</span>
+                        </div>
+                    </div>
+                </a>
+                <div class="nav-links">
+                    <a href="{% url 'home' %}">Bosh sahifa</a>
+                    {% if user.is_authenticated %}
+                        <span class="user-name">Xush kelibsiz, {{ user.username }}</span>
+                        <a href="{% url 'logout' %}" class="btn-logout">Chiqish</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn-login">Kirish</a>
+                        <a href="{% url 'register' %}" class="btn-primary">Ro'yxatdan o'tish</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- footer sectionda -->
+<footer>
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <div class="footer-logo-container">
+                    <div class="footer-logo-icon">
+                        <img src="/static/images/logo.svg" alt="SS Future Skills">
+                    </div>
+                    <div class="footer-logo-text">
+                        <h3>SS Future Skills</h3>
+                        <p>Kelajak ko'nikmalarini o'rganing</p>
+                    </div>
+                </div>
+                <p class="footer-description">
+                    O'zbekistonning yetakchi onlayn ta'lim platformasi.
+                    Zamonaviy kasblar va ko'nikmalarni o'rganing.
+                </p>
+            </div>
+
+            <div class="footer-links">
+                <!-- links -->
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 SS Future Skills. Barcha huquqlar himoyalangan.</p>
+        </div>
+    </div>
+</footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

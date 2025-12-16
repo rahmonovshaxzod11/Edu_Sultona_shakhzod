@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ module.title }} - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="module-header">
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="{% url 'home' %}">Bosh sahifa</a> >
+            <a href="{% url 'course_detail' module.course.id %}">{{ module.course.name }}</a> >
+            <span>{{ module.title }}</span>
+        </nav>
+
+        <h1>{{ module.title }}</h1>
+        <p>{{ module.description|default:"Modul haqida ma'lumot" }}</p>
+    </div>
+</div>
+
+<div class="lessons-container">
+    <div class="container">
+        <h2 class="section-title">Darslar ro'yxati</h2>
+
+        {% if lessons %}
+            <div class="lessons-list">
+                {% for lesson in lessons %}
+                <div class="lesson-item {% if lesson.completed %}completed{% endif %} {% if lesson.type == 'listening' %}listening-item{% elif lesson.type == 'speaking' %}speaking-item{% endif %}">
+                    <div class="lesson-number">{{ lesson.display_order }}</div>
+
+                    <div class="lesson-icon">
+                        {% if lesson.type == 'video' %}
+                            <i class="fas fa-video"></i>
+                        {% elif lesson.type == 'listening' %}
+                            <i class="fas fa-headphones"></i>
+                        {% elif lesson.type == 'speaking' %}
+                            <i class="fas fa-microphone-alt"></i>
+                        {% endif %}
+                    </div>
+
+                    <div class="lesson-info">
+                        <h3>
+                            {{ lesson.title }}
+                            {% if lesson.type == 'listening' %}
+                                <span class="lesson-type-badge listening-badge">
+                                    <i class="fas fa-headphones-alt"></i> Listening
+                                </span>
+                            {% elif lesson.type == 'speaking' %}
+                                <span class="lesson-type-badge speaking-badge">
+                                    <i class="fas fa-microphone-alt"></i> Speaking
+                                </span>
+                            {% endif %}
+                        </h3>
+
+                        <div class="lesson-meta">
+                            <span><i class="fas fa-clock"></i> {{ lesson.duration|default:"15:00" }}</span>
+
+                            {% if lesson.type == 'listening' %}
+                                <span class="type-badge">{{ lesson.listening_type }}</span>
+                            {% elif lesson.type == 'speaking' %}
+                                <span class="type-badge">{{ lesson.speaking_type }}</span>
+                            {% endif %}
+
+                            {% if lesson.completed %}
+                                <span class="completed-badge"><i class="fas fa-check-circle"></i> Yakunlandi</span>
+                            {% endif %}
+                        </div>
+
+                        {% if lesson.type == 'speaking' and lesson.object.description %}
+                            <p class="lesson-description">{{ lesson.object.description|truncatechars:100 }}</p>
+                        {% elif lesson.type == 'listening' and lesson.object.description %}
+                            <p class="lesson-description">{{ lesson.object.description|truncatechars:100 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="lesson-actions">
+                        {% if lesson.type == 'video' %}
+                            <a href="{% url 'lesson_detail' lesson.id %}" class="btn-primary">
+                                <i class="fas fa-play"></i> Darsni boshlash
+                            </a>
+                        {% elif lesson.type == 'listening' %}
+                            <a href="{% url 'listening_detail' lesson.id %}" class="btn-primary btn-listening">
+                                <i class="fas fa-headphones"></i> Listening boshlash
+                            </a>
+                        {% elif lesson.type == 'speaking' %}
+                            <a href="{% url 'speaking_detail' lesson.id %}" class="btn-primary btn-speaking">
+                                <i class="fas fa-microphone-alt"></i> Speaking boshlash
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-lessons">
+                <i class="fas fa-video-slash"></i>
+                <h3>Bu modulda hali darslar mavjud emas</h3>
+                <p>Tez orada darslar qo'shiladi</p>
+            </div>
+        {% endif %}
+
+        <div class="back-button">
+            <a href="{% url 'course_detail' module.course.id %}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Kursga qaytish
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styling for different lesson types */
+.lesson-item {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 15px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border-left: 5px solid #3498db;
+}
+
+.lesson-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.listening-item {
+    border-left-color: #9b59b6;
+}
+
+.speaking-item {
+    border-left-color: #2ecc71;
+}
+
+.listening-item .lesson-icon {
+    color: #9b59b6;
+}
+
+.speaking-item .lesson-icon {
+    color: #2ecc71;
+}
+
+.lesson-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #3498db;
+    margin-right: 20px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.listening-item .lesson-number {
+    color: #9b59b6;
+}
+
+.speaking-item .lesson-number {
+    color: #2ecc71;
+}
+
+.lesson-icon {
+    font-size: 24px;
+    margin-right: 15px;
+    color: #3498db;
+    width: 40px;
+    text-align: center;
+}
+
+.lesson-info {
+    flex: 1;
+}
+
+.lesson-info h3 {
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lesson-type-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: normal;
+}
+
+.listening-badge {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.speaking-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.lesson-meta {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.lesson-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.type-badge {
+    background: #9b59b6;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.8em;
+}
+
+.type-badge[style*="speaking"] {
+    background: #2ecc71;
+}
+
+.completed-badge {
+    background: #28a745;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+}
+
+.lesson-item.completed {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.lesson-item.completed .lesson-meta span {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.lesson-item.completed .type-badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.lesson-description {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+.lesson-actions {
+    min-width: 160px;
+}
+
+.btn-listening {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    color: white;
+}
+
+.btn-speaking {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    color: white;
+}
+
+.btn-listening:hover,
+.btn-speaking:hover {
+    transform: translateY(-2px);
+    color: white;
+}
+
+.btn-listening:hover {
+    background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+}
+
+.btn-speaking:hover {
+    background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+}
+
+.empty-lessons {
+    text-align: center;
+    padding: 50px 20px;
+    color: #666;
+}
+
+.empty-lessons i {
+    font-size: 60px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-lessons h3 {
+    margin: 10px 0;
+    color: #444;
+}
+
+.empty-lessons p {
+    color: #777;
+}
+
+.back-button {
+    margin-top: 40px;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .lesson-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+    
+    .lesson-number {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .lesson-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .lesson-actions {
+        margin-top: 15px;
+        width: 100%;
+    }
+    
+    .lesson-actions a {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .lesson-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+</style>
+{% endblock %}
