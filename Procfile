@@ -1,1 +1,1 @@
-web: gunicorn railway.wsgi --log-file -
+web: python manage.py migrate && gunicorn edusulton.wsgi
