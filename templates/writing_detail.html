@@ -1,0 +1,1254 @@
+<!-- templates/writing_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ writing.title }} - Writing - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="writing-header">
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="{% url 'home' %}">Bosh sahifa</a> >
+            <a href="{% url 'course_detail' module.course.id %}">{{ course.name }}</a> >
+            <a href="{% url 'module_detail' module.id %}">{{ module.title }}</a> >
+            <span>{{ writing.title }}</span>
+        </nav>
+
+        <h1><i class="fas fa-pen-alt"></i> {{ writing.title }}</h1>
+        <div class="writing-meta">
+            <span><i class="fas fa-signal"></i> {{ writing.get_level_display }}</span>
+            <span><i class="fas fa-clock"></i> {{ writing.timer_minutes }} daqiqa</span>
+            <span><i class="fas fa-tag"></i> {{ writing.get_writing_type_display }}</span>
+            <span><i class="fas fa-file-word"></i> {{ writing.word_count_min }}-{{ writing.word_count_max }} so'z</span>
+        </div>
+    </div>
+</div>
+
+<div class="writing-content">
+    <div class="container">
+        <div class="writing-container">
+            <!-- LEFT: Task and Editor -->
+            <div class="writing-left">
+                <div class="task-section">
+                    <h3><i class="fas fa-tasks"></i> Writing Vazifasi</h3>
+                    <div class="task-box">
+                        <div class="task-info">
+                            <p><strong>Vazifa turi:</strong> {{ writing.get_writing_type_display }}</p>
+                            {% if writing.task_type %}
+                            <p><strong>So'rov turi:</strong> {{ writing.get_task_type_display }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="task-text">
+                            {{ writing.task_text|linebreaks }}
+                        </div>
+
+                        {% if writing.example_image %}
+                        <div class="example-section">
+                            <h4><i class="fas fa-image"></i> Namuna diagramma:</h4>
+                            <div class="example-box">
+                                <img src="{{ writing.example_image.url }}" alt="Namuna" class="example-image">
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <h3><i class="fas fa-edit"></i> Javobingizni yozing</h3>
+
+                    <!-- Timer -->
+                    <div class="writing-timer">
+                        <div class="timer-display">
+                            <i class="fas fa-clock"></i>
+                            <span id="minutes">{{ writing.timer_minutes }}</span>:<span id="seconds">00</span>
+                        </div>
+                        <div class="timer-controls">
+                            <button type="button" class="btn-timer-start" onclick="startTimer()">
+                                <i class="fas fa-play"></i> Vaqtni boshlash
+                            </button>
+                            <button type="button" class="btn-timer-pause" onclick="pauseTimer()" style="display: none;">
+                                <i class="fas fa-pause"></i> Pauza
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Editor -->
+                    <div class="editor-box">
+                        <textarea id="writing-editor"
+                                  placeholder="Javobingizni bu yerga yozing..."
+                                  rows="15"
+                                  oninput="updateWordCount()"></textarea>
+
+                        <div class="editor-tools">
+                            <div class="word-count">
+                                <i class="fas fa-font"></i>
+                                So'zlar soni: <span id="word-count">0</span>/{{ writing.word_count_max }}
+                            </div>
+                            <div class="editor-buttons">
+                                <button type="button" class="btn-clear" onclick="clearEditor()">
+                                    <i class="fas fa-trash"></i> Tozalash
+                                </button>
+                                <button type="button" class="btn-format" onclick="formatText()">
+                                    <i class="fas fa-magic"></i> Formatlash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="submit-section">
+                        <input type="hidden" id="time-spent" value="0">
+                        <button type="button" class="btn-primary btn-submit" onclick="submitWriting()">
+                            <i class="fas fa-paper-plane"></i> Tahlil qilish
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Results and Attempts -->
+            <div class="writing-right">
+                <!-- Previous Attempts -->
+                {% if attempts %}
+                <div class="attempts-section">
+                    <h3><i class="fas fa-history"></i> Oldingi urinishlar</h3>
+                    <div class="attempts-list">
+                        {% for attempt in attempts %}
+                        <div class="attempt-item" onclick="showWritingAttempt({{ attempt.id }})">
+                            <div class="attempt-date">
+                                {{ attempt.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                            <div class="attempt-score">
+                                <div class="score-circle" style="background: {% if attempt.overall_score >= 80 %}#27ae60{% elif attempt.overall_score >= 60 %}#f39c12{% else %}#e74c3c{% endif %};">
+                                    {{ attempt.overall_score|floatformat:0 }}
+                                </div>
+                            </div>
+                            <div class="attempt-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">So'zlar:</span>
+                                    <span class="detail-value">{{ attempt.word_count }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Vaqt:</span>
+                                    <span class="detail-value">
+                                        {% if attempt.time_spent >= 60 %}
+                                            {% widthratio attempt.time_spent 60 1 as minutes %}
+                                            {{ minutes|floatformat:0 }} daqiqa
+                                            {% with remaining=attempt.time_spent|add:"0"|divisibleby:60|default:0 %}
+                                                {% if remaining > 0 %}
+                                                    {{ remaining }} soniya
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            {{ attempt.time_spent }} soniya
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Results Section -->
+                <div class="results-section" id="results-section" style="display: none;">
+                    <h3><i class="fas fa-chart-bar"></i> Tahlil natijalari</h3>
+
+                    <!-- Overall Score -->
+                    <div class="overall-score-card">
+                        <div class="score-card-header">
+                            <i class="fas fa-star"></i>
+                            <h4>Umumiy Baho</h4>
+                        </div>
+                        <div class="score-circle-large" id="overall-score-circle">
+                            <div class="score-number-large" id="overall-score">0</div>
+                            <div class="score-label">/100</div>
+                        </div>
+                        <div class="score-description" id="overall-description">Yuklanmoqda...</div>
+                    </div>
+
+                    <!-- Criteria Scores -->
+                    <div class="criteria-grid">
+                        <div class="criteria-card">
+                            <div class="criteria-header">
+                                <i class="fas fa-bullseye"></i>
+                                <h5>Task Response</h5>
+                            </div>
+                            <div class="criteria-score">
+                                <div class="score-progress" id="content-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="content-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="criteria-description" id="content-description">Savolga javob</div>
+                            </div>
+                        </div>
+
+                        <div class="criteria-card">
+                            <div class="criteria-header">
+                                <i class="fas fa-project-diagram"></i>
+                                <h5>Coherence & Cohesion</h5>
+                            </div>
+                            <div class="criteria-score">
+                                <div class="score-progress" id="coherence-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="coherence-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="criteria-description" id="coherence-description">Tuzilish va bog'lanish</div>
+                            </div>
+                        </div>
+
+                        <div class="criteria-card">
+                            <div class="criteria-header">
+                                <i class="fas fa-book"></i>
+                                <h5>Lexical Resource</h5>
+                            </div>
+                            <div class="criteria-score">
+                                <div class="score-progress" id="vocabulary-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="vocabulary-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="criteria-description" id="vocabulary-description">So'z boyligi</div>
+                            </div>
+                        </div>
+
+                        <div class="criteria-card">
+                            <div class="criteria-header">
+                                <i class="fas fa-edit"></i>
+                                <h5>Grammar</h5>
+                            </div>
+                            <div class="criteria-score">
+                                <div class="score-progress" id="grammar-progress">
+                                    <div class="progress-circle" data-score="0">
+                                        <span class="progress-number" id="grammar-score">0</span>
+                                    </div>
+                                </div>
+                                <div class="criteria-description" id="grammar-description">Grammatika</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feedback -->
+                    <div class="feedback-section">
+                        <h4><i class="fas fa-comment"></i> AI Feedback</h4>
+                        <div class="feedback-box" id="feedback-text">
+                            Tahlil qilinmagan...
+                        </div>
+                    </div>
+
+                    <!-- Suggestions -->
+                    <div class="suggestions-section">
+                        <h4><i class="fas fa-lightbulb"></i> Takliflar</h4>
+                        <div class="suggestions-list" id="suggestions-list">
+                            <div class="suggestion-item">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Takliflar yuklanmoqda...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Writing Tips -->
+                <div class="tips-section" id="tips-section">
+                    <h3><i class="fas fa-tips"></i> Writing uchun maslahatlar</h3>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <i class="fas fa-list-ol"></i>
+                            <div class="tip-content">
+                                <h5>Reja tuzing</h5>
+                                <p>Yozishdan oldin 5 daqiqa reja tuzing. Bu tuzilishni yaxshilaydi.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-paragraph"></i>
+                            <div class="tip-content">
+                                <h5>Paragraflarni to'g'ri tashkil qiling</h5>
+                                <p>Har bir yangi g'oya uchun yangi paragraf boshlang.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-sync-alt"></i>
+                            <div class="tip-content">
+                                <h5>Murakkab iboralardan foydalaning</h5>
+                                <p>Oddiy gaplarni murakkab gaplarga aylantirishga harakat qiling.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-clock"></i>
+                            <div class="tip-content">
+                                <h5>Vaqtni nazorat qiling</h5>
+                                <p>10 daqiqa rejalash, 40 daqiqa yozish, 10 daqiqa tekshirish.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation-buttons">
+            <div class="nav-left">
+                {% if prev_content %}
+                    {% if prev_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi dars
+                        </a>
+                    {% elif prev_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi listening
+                        </a>
+                    {% elif prev_content.0 == 'speaking' %}
+                        <a href="{% url 'speaking_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi speaking
+                        </a>
+                    {% elif prev_content.0 == 'reading' %}
+                        <a href="{% url 'reading_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi reading
+                        </a>
+                    {% elif prev_content.0 == 'writing' %}
+                        <a href="{% url 'writing_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi writing
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                <a href="{% url 'module_detail' module.id %}" class="btn-secondary">
+                    <i class="fas fa-list"></i> Modulga qaytish
+                </a>
+            </div>
+
+            <div class="nav-right">
+                {% if next_content %}
+                    {% if next_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi dars <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi listening <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'speaking' %}
+                        <a href="{% url 'speaking_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi speaking <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'reading' %}
+                        <a href="{% url 'reading_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi reading <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'writing' %}
+                        <a href="{% url 'writing_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi writing <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Writing variables
+const writingId = {{ writing.id }};
+let timerInterval;
+let timeLeft = {{ writing.timer_minutes }} * 60;
+let timeSpent = 0;
+let timerRunning = false;
+
+// Timer functions
+function startTimer() {
+    if (!timerRunning) {
+        timerRunning = true;
+        timerInterval = setInterval(updateTimer, 1000);
+        document.querySelector('.btn-timer-start').style.display = 'none';
+        document.querySelector('.btn-timer-pause').style.display = 'inline-block';
+    }
+}
+
+function pauseTimer() {
+    if (timerRunning) {
+        timerRunning = false;
+        clearInterval(timerInterval);
+        document.querySelector('.btn-timer-start').style.display = 'inline-block';
+        document.querySelector('.btn-timer-pause').style.display = 'none';
+    }
+}
+
+function updateTimer() {
+    timeLeft--;
+    timeSpent++;
+
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+
+    document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+
+    // Update hidden field
+    document.getElementById('time-spent').value = timeSpent;
+
+    if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        alert('Vaqt tugadi! Tahlil qilish uchun "Tahlil qilish" tugmasini bosing.');
+        pauseTimer();
+    }
+}
+
+// Editor functions
+function updateWordCount() {
+    const text = document.getElementById('writing-editor').value;
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    const wordCount = words.length;
+
+    document.getElementById('word-count').textContent = wordCount;
+
+    // Check word limit
+    const maxWords = {{ writing.word_count_max }};
+    if (wordCount > maxWords) {
+        document.getElementById('word-count').style.color = '#e74c3c';
+    } else if (wordCount < {{ writing.word_count_min }}) {
+        document.getElementById('word-count').style.color = '#f39c12';
+    } else {
+        document.getElementById('word-count').style.color = '#27ae60';
+    }
+
+    return wordCount;
+}
+
+function clearEditor() {
+    if (confirm('Hamma matnni o\'chirishni istaysizmi?')) {
+        document.getElementById('writing-editor').value = '';
+        updateWordCount();
+    }
+}
+
+function formatText() {
+    const editor = document.getElementById('writing-editor');
+    let text = editor.value;
+
+    // Add paragraph formatting
+    text = text.replace(/\n\s*\n/g, '\n\n');
+
+    // Capitalize first letter of each paragraph
+    text = text.replace(/(^\s*|\n\s*)([a-z])/g, function(match, whitespace, letter) {
+        return whitespace + letter.toUpperCase();
+    });
+
+    editor.value = text;
+    updateWordCount();
+}
+
+// Submit writing
+async function submitWriting() {
+    const editor = document.getElementById('writing-editor');
+    const text = editor.value.trim();
+    const wordCount = updateWordCount();
+
+    // Validation
+    if (!text) {
+        alert('Iltimos, javob yozing!');
+        return;
+    }
+
+    if (wordCount < {{ writing.word_count_min }}) {
+        alert(`Kamida {{ writing.word_count_min }} so\'z yozishingiz kerak. Siz ${wordCount} so\'z yozdingiz.`);
+        return;
+    }
+
+    if (wordCount > {{ writing.word_count_max }}) {
+        if (!confirm(`Siz maksimal chegaradan ({{ writing.word_count_max }} so\'z) oshib ketdingiz. Davom etishni istaysizmi?`)) {
+            return;
+        }
+    }
+
+    // Stop timer if running
+    if (timerRunning) {
+        pauseTimer();
+    }
+
+    // Prepare data
+    const data = {
+        answer_text: text,
+        time_spent: timeSpent,
+        word_count: wordCount
+    };
+
+    // Show loading
+    const submitBtn = document.querySelector('.btn-submit');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tahlil qilinmoqda...';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await fetch(`/api/submit-writing/${writingId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Display results
+            displayWritingResults(result);
+
+            // Show results section
+            document.getElementById('results-section').style.display = 'block';
+            document.getElementById('tips-section').style.display = 'none';
+
+            // Scroll to results
+            document.getElementById('results-section').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+
+            // Save attempt ID
+            localStorage.setItem('last_writing_attempt_id', result.attempt_id);
+
+            alert('Writing muvaffaqiyatli tahlil qilindi!');
+        } else {
+            throw new Error(result.error || 'Noma\'lum xato');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Xatolik: ' + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// Display results
+function displayWritingResults(result) {
+    console.log("Displaying writing results:", result);
+
+    // Update scores
+    const scores = result.scores || {};
+
+    // Animate scores
+    animateScore('overall-score', scores.overall || 0, 1000);
+    updateScoreCircle('overall-score-circle', scores.overall || 0);
+    updateScoreDescription('overall-description', scores.overall || 0);
+
+    animateScore('content-score', scores.content || 0, 1200);
+    animateProgressCircle('content-progress .progress-circle', scores.content || 0);
+    updateCriteriaDescription('content-description', scores.content || 0, 'content');
+
+    animateScore('coherence-score', scores.coherence || 0, 1400);
+    animateProgressCircle('coherence-progress .progress-circle', scores.coherence || 0);
+    updateCriteriaDescription('coherence-description', scores.coherence || 0, 'coherence');
+
+    animateScore('vocabulary-score', scores.vocabulary || 0, 1600);
+    animateProgressCircle('vocabulary-progress .progress-circle', scores.vocabulary || 0);
+    updateCriteriaDescription('vocabulary-description', scores.vocabulary || 0, 'vocabulary');
+
+    animateScore('grammar-score', scores.grammar || 0, 1800);
+    animateProgressCircle('grammar-progress .progress-circle', scores.grammar || 0);
+    updateCriteriaDescription('grammar-description', scores.grammar || 0, 'grammar');
+
+    // Update feedback
+    document.getElementById('feedback-text').textContent = result.feedback || 'Feedback mavjud emas';
+
+    // Update suggestions
+    const suggestions = result.suggestions || [];
+    updateSuggestions(suggestions);
+}
+
+function updateCriteriaDescription(elementId, score, type) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    let description = '';
+    if (type === 'content') {
+        if (score >= 80) description = 'Mukammal javob';
+        else if (score >= 60) description = 'Yaxshi javob';
+        else if (score >= 40) description = 'O\'rtacha javob';
+        else description = 'Yaxshilash kerak';
+    } else if (type === 'coherence') {
+        if (score >= 80) description = 'Ajoyib tuzilish';
+        else if (score >= 60) description = 'Yaxshi tuzilish';
+        else if (score >= 40) description = 'O\'rtacha tuzilish';
+        else description = 'Tuzilishni yaxshilash';
+    } else if (type === 'vocabulary') {
+        if (score >= 80) description = 'Boy so\'z boyligi';
+        else if (score >= 60) description = 'Yaxshi so\'z boyligi';
+        else if (score >= 40) description = 'O\'rtacha so\'z boyligi';
+        else description = 'So\'z boyligini oshirish';
+    } else if (type === 'grammar') {
+        if (score >= 80) description = 'Mukammal grammatika';
+        else if (score >= 60) description = 'Yaxshi grammatika';
+        else if (score >= 40) description = 'O\'rtacha grammatika';
+        else description = 'Grammatikani yaxshilash';
+    }
+
+    element.textContent = description;
+}
+
+function updateSuggestions(suggestions) {
+    const container = document.getElementById('suggestions-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (Array.isArray(suggestions)) {
+        suggestions.forEach((suggestion, index) => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.innerHTML = `
+                <div class="suggestion-number">${index + 1}</div>
+                <div class="suggestion-content">${suggestion}</div>
+            `;
+            container.appendChild(item);
+        });
+    }
+}
+
+// Animation functions (from speaking_detail.html)
+function animateScore(elementId, targetScore, duration) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const startScore = parseInt(element.textContent) || 0;
+    const startTime = performance.now();
+
+    function updateScore(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const easeOutQuad = t => t * (2 - t);
+        const currentScore = Math.round(startScore + (targetScore - startScore) * easeOutQuad(progress));
+
+        element.textContent = currentScore;
+
+        if (progress < 1) {
+            requestAnimationFrame(updateScore);
+        }
+    }
+
+    requestAnimationFrame(updateScore);
+}
+
+function animateProgressCircle(circleSelector, targetScore) {
+    const circle = document.querySelector(circleSelector);
+    if (!circle) return;
+
+    circle.setAttribute('data-score', targetScore);
+    circle.style.setProperty('--score', targetScore);
+
+    circle.classList.add('animating');
+    setTimeout(() => {
+        circle.classList.remove('animating');
+    }, 1000);
+}
+
+function updateScoreCircle(circleId, score) {
+    const circle = document.getElementById(circleId);
+    if (!circle) return;
+
+    let color;
+    if (score >= 80) color = '#27ae60';
+    else if (score >= 60) color = '#f39c12';
+    else if (score >= 40) color = '#e74c3c';
+    else color = '#c0392b';
+
+    circle.style.background = `conic-gradient(${color} ${score * 3.6}deg, #f0f0f0 0deg)`;
+    circle.style.setProperty('--score-color', color);
+}
+
+function updateScoreDescription(elementId, score) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    let description = '';
+    if (score >= 80) description = 'Ajoyib natija! 👏';
+    else if (score >= 60) description = 'Yaxshi natija! 👍';
+    else if (score >= 40) description = 'O\'rta daraja 💪';
+    else description = 'Yaxshilash kerak 📈';
+
+    element.textContent = description;
+}
+
+// Show previous attempt
+async function showWritingAttempt(attemptId) {
+    try {
+        const response = await fetch(`/api/writing-attempt/${attemptId}/`);
+        const result = await response.json();
+
+        if (result.success) {
+            const attempt = result.attempt;
+
+            // Fill editor with previous attempt
+            document.getElementById('writing-editor').value = attempt.answer_text;
+            updateWordCount();
+
+            // Show results section with this attempt
+            displayWritingResults({
+                scores: {
+                    overall: attempt.overall_score,
+                    content: attempt.content_score,
+                    coherence: attempt.coherence_score,
+                    vocabulary: attempt.vocabulary_score,
+                    grammar: attempt.grammar_score
+                },
+                feedback: attempt.ai_feedback,
+                suggestions: attempt.suggestions
+            });
+
+            document.getElementById('results-section').style.display = 'block';
+            document.getElementById('tips-section').style.display = 'none';
+
+            document.getElementById('results-section').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    } catch (error) {
+        console.error('Error loading attempt:', error);
+    }
+}
+
+// Helper functions
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Writing page loaded');
+
+    // Set initial word count
+    updateWordCount();
+
+    // Check for previous attempt
+    const lastAttemptId = localStorage.getItem('last_writing_attempt_id');
+    if (lastAttemptId) {
+        console.log('Found previous attempt:', lastAttemptId);
+    }
+});
+</script>
+
+<style>
+/* Writing specific styles */
+.writing-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin: 30px 0;
+}
+
+.writing-left, .writing-right {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Task Section */
+.task-box {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.task-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #3498db;
+}
+
+.task-info p {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.task-text {
+    line-height: 1.8;
+    font-size: 1.1em;
+    margin-bottom: 20px;
+}
+
+.example-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.example-box {
+    text-align: center;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.example-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+}
+
+/* Timer */
+.writing-timer {
+    background: #2c3e50;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.timer-display {
+    font-size: 1.8em;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.timer-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-timer-start, .btn-timer-pause {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-timer-start {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-timer-pause {
+    background: #e74c3c;
+    color: white;
+}
+
+/* Editor */
+.editor-box {
+    border: 2px solid #3498db;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+#writing-editor {
+    width: 100%;
+    padding: 20px;
+    border: none;
+    resize: vertical;
+    font-size: 1.1em;
+    line-height: 1.6;
+    font-family: 'Arial', sans-serif;
+    background: white;
+    min-height: 300px;
+}
+
+#writing-editor:focus {
+    outline: none;
+}
+
+.editor-tools {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.word-count {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.editor-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-clear, .btn-format {
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s;
+}
+
+.btn-clear:hover {
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+}
+
+.btn-format:hover {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+/* Submit Button */
+.btn-submit {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2em;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+}
+
+.btn-submit:hover {
+    background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+}
+
+/* Attempts Section */
+.attempts-list {
+    margin-top: 15px;
+}
+
+.attempt-item {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid #3498db;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.attempt-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.attempt-date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.score-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.attempt-details {
+    display: flex;
+    gap: 15px;
+}
+
+.detail-item {
+    text-align: center;
+}
+
+.detail-label {
+    display: block;
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.detail-value {
+    display: block;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Results Section */
+.overall-score-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.score-circle-large {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: conic-gradient(#3498db 0deg, #f0f0f0 0deg);
+    transition: background 1s ease-in-out;
+}
+
+.score-number-large {
+    font-size: 3em;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 1em;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+
+/* Criteria Grid */
+.criteria-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.criteria-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border-top: 4px solid #3498db;
+}
+
+.criteria-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.criteria-header i {
+    color: #3498db;
+    font-size: 1.5em;
+}
+
+.criteria-header h5 {
+    margin: 0;
+    font-size: 1em;
+}
+
+.criteria-description {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 10px;
+}
+
+/* Feedback & Suggestions */
+.feedback-section, .suggestions-section {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.feedback-box {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    line-height: 1.6;
+    margin-top: 15px;
+}
+
+.suggestions-list {
+    margin-top: 15px;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #3498db;
+}
+
+.suggestion-number {
+    background: #3498db;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.suggestion-content {
+    flex: 1;
+    line-height: 1.5;
+}
+
+/* Tips Section */
+.tips-section {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.tips-list {
+    margin-top: 20px;
+}
+
+.tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #f39c12;
+}
+
+.tip-item i {
+    color: #f39c12;
+    font-size: 1.5em;
+    margin-top: 3px;
+}
+
+.tip-content h5 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+.tip-content p {
+    margin: 0;
+    color: #666;
+    font-size: 0.95em;
+}
+
+/* Progress Circles (shared from speaking) */
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    position: relative;
+    background: conic-gradient(var(--score-color, #3498db) calc(var(--score, 0) * 3.6deg), #f0f0f0 0deg);
+    transition: background 1s ease-in-out;
+}
+
+.progress-circle.animating {
+    animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.progress-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Navigation */
+.navigation-buttons {
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.nav-left, .nav-right {
+    display: flex;
+    gap: 15px;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .writing-container {
+        grid-template-columns: 1fr;
+    }
+
+    .task-info {
+        grid-template-columns: 1fr;
+    }
+
+    .criteria-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .writing-timer {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .editor-tools {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .criteria-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .attempt-item {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .attempt-details {
+        justify-content: center;
+    }
+
+    .navigation-buttons {
+        flex-direction: column;
+        gap: 15px;
+    }
+    }
+
+    .nav-left, .nav-right {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

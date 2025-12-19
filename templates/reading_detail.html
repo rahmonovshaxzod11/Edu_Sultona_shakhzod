@@ -1,0 +1,390 @@
+<!-- templates/reading_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ reading.title }} - Reading - eduSultonawithShaxzod{% endblock %}
+
+{% block content %}
+<div class="reading-header">
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="{% url 'home' %}">Bosh sahifa</a> >
+            <a href="{% url 'course_detail' module.course.id %}">{{ course.name }}</a> >
+            <a href="{% url 'module_detail' module.id %}">{{ module.title }}</a> >
+            <span>{{ reading.title }}</span>
+        </nav>
+
+        <h1><i class="fas fa-book-reader"></i> {{ reading.title }}</h1>
+        <div class="reading-meta">
+            <span><i class="fas fa-signal"></i> {{ reading.get_level_display }}</span>
+            <span><i class="fas fa-clock"></i> {{ reading.timer_minutes }} daqiqa</span>
+            <span><i class="fas fa-tag"></i> {{ reading.get_reading_type_display }}</span>
+            <span><i class="fas fa-file-word"></i> {{ reading.word_count }} so'z</span>
+        </div>
+    </div>
+</div>
+
+<div class="reading-content">
+    <div class="container">
+        <div class="reading-container">
+            <!-- LEFT: Reading text -->
+            <div class="reading-left">
+                <div class="reading-instruction">
+                    <h3><i class="fas fa-info-circle"></i> Ko'rsatmalar</h3>
+                    <div class="instruction-box">
+                        {{ reading.instruction|linebreaks }}
+                    </div>
+                </div>
+
+                <div class="reading-text-section">
+                    <h3><i class="fas fa-file-alt"></i> Reading Matni</h3>
+                    <div class="reading-text-box">
+                        {{ reading.reading_text|linebreaks }}
+                    </div>
+                </div>
+
+                {% if reading.diagram_image %}
+                <div class="diagram-section">
+                    <h3><i class="fas fa-project-diagram"></i> Diagramma/Rasm</h3>
+                    <div class="diagram-box">
+                        <img src="{{ reading.diagram_image.url }}" alt="Diagram" class="diagram-image">
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- RIGHT: Questions -->
+            <div class="reading-right">
+                <div class="questions-section">
+                    <h3><i class="fas fa-question-circle"></i> Savollar ({{ questions.count }})</h3>
+
+                    {% if questions %}
+                    <form id="reading-form" onsubmit="submitReadingTest(event)">
+                        <!-- Timer -->
+                        <div class="reading-timer">
+                            <div class="timer-display">
+                                <i class="fas fa-clock"></i>
+                                <span id="minutes">{{ reading.timer_minutes }}</span>:<span id="seconds">00</span>
+                            </div>
+                            <button type="button" class="btn-timer" onclick="startTimer()">
+                                <i class="fas fa-play"></i> Vaqtni boshlash
+                            </button>
+                        </div>
+
+                        <!-- Questions -->
+                        <div class="questions-list">
+                            {% for question in questions %}
+                            <div class="question-item" data-type="{{ question.question_type }}">
+                                <div class="question-header">
+                                    <h4>Savol {{ forloop.counter }}</h4>
+                                    <span class="question-type">{{ question.get_question_type_display }}</span>
+                                </div>
+
+                                <div class="question-text">
+                                    {{ question.question_text|linebreaks }}
+                                </div>
+
+                                <div class="answers">
+                                    {% for answer in question.answers.all %}
+                                    <div class="answer-item">
+                                        <input type="radio"
+                                               name="question_{{ question.id }}"
+                                               value="{{ answer.id }}"
+                                               id="answer_{{ answer.id }}">
+                                        <label for="answer_{{ answer.id }}">
+                                            {{ answer.answer_text }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Submit button -->
+                        <div class="submit-section">
+                            <input type="hidden" id="time-spent" name="time_spent" value="0">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-paper-plane"></i> Testni topshirish
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation-buttons">
+            <div class="nav-left">
+                {% if prev_content %}
+                    {% if prev_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi dars
+                        </a>
+                    {% elif prev_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi listening
+                        </a>
+                    {% elif prev_content.0 == 'speaking' %}
+                        <a href="{% url 'speaking_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi speaking
+                        </a>
+                    {% elif prev_content.0 == 'reading' %}
+                        <a href="{% url 'reading_detail' prev_content.1.id %}" class="btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Oldingi reading
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                <a href="{% url 'module_detail' module.id %}" class="btn-secondary">
+                    <i class="fas fa-list"></i> Modulga qaytish
+                </a>
+            </div>
+
+            <div class="nav-right">
+                {% if next_content %}
+                    {% if next_content.0 == 'video' %}
+                        <a href="{% url 'lesson_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi dars <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'listening' %}
+                        <a href="{% url 'listening_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi listening <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'speaking' %}
+                        <a href="{% url 'speaking_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi speaking <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% elif next_content.0 == 'reading' %}
+                        <a href="{% url 'reading_detail' next_content.1.id %}" class="btn-primary">
+                            Keyingi reading <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Timer variables
+let timerInterval;
+let timeLeft = {{ reading.timer_minutes }} * 60; // seconds
+let timeSpent = 0;
+let timerRunning = false;
+
+function startTimer() {
+    if (!timerRunning) {
+        timerRunning = true;
+        timerInterval = setInterval(updateTimer, 1000);
+        document.querySelector('.btn-timer').innerHTML = '<i class="fas fa-pause"></i> Vaqtni to\'xtatish';
+        document.querySelector('.btn-timer').onclick = pauseTimer;
+    }
+}
+
+function pauseTimer() {
+    if (timerRunning) {
+        timerRunning = false;
+        clearInterval(timerInterval);
+        document.querySelector('.btn-timer').innerHTML = '<i class="fas fa-play"></i> Davom etish';
+        document.querySelector('.btn-timer').onclick = startTimer;
+    }
+}
+
+function updateTimer() {
+    timeLeft--;
+    timeSpent++;
+
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+
+    document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+
+    // Update hidden field
+    document.getElementById('time-spent').value = timeSpent;
+
+    if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        alert('Vaqt tugadi! Test avtomatik topshiriladi.');
+        submitReadingTest();
+    }
+}
+
+async function submitReadingTest(e) {
+    if (e) e.preventDefault();
+
+    // Stop timer
+    if (timerRunning) {
+        clearInterval(timerInterval);
+    }
+
+    // Collect answers
+    const form = document.getElementById('reading-form');
+    const formData = new FormData(form);
+
+    // Convert to JSON
+    const data = {
+        time_spent: timeSpent
+    };
+
+    const inputs = form.querySelectorAll('input[type="radio"]:checked');
+    inputs.forEach(input => {
+        const name = input.name;
+        const value = input.value;
+        data[name] = value;
+    });
+
+    // Submit
+    const submitBtn = form.querySelector('.btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tekshirilmoqda...';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await fetch(`/api/submit-reading-test/{{ reading.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`Test yakunlandi! Natijangiz: ${result.score.toFixed(1)}% (${result.correct_answers}/${result.total_questions})`);
+            window.location.reload();
+        } else {
+            alert('Xatolik: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Server bilan aloqa qilishda xatolik');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+</script>
+
+<style>
+.reading-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin: 30px 0;
+}
+
+.reading-left, .reading-right {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.reading-text-box {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    line-height: 1.8;
+    font-size: 1.1em;
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+}
+
+.diagram-box {
+    text-align: center;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.diagram-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 5px;
+}
+
+.reading-timer {
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.timer-display {
+    font-size: 1.5em;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+
+.btn-timer {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.question-item {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 5px solid #3498db;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.question-type {
+    background: #e74c3c;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9em;
+}
+
+.answers {
+    margin-top: 15px;
+}
+
+.answer-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    background: #f8f9fa;
+}
+
+.answer-item:hover {
+    background: #e9ecef;
+}
+
+.answer-item input[type="radio"] {
+    margin-right: 10px;
+}
+
+@media (max-width: 992px) {
+    .reading-container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

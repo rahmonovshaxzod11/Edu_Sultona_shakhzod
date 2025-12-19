@@ -1275,3 +1275,700 @@ def get_speaking_attempt(request, attempt_id):
     except Exception as e:
         print(f"Error in get_speaking_attempt: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+# courses/views.py - READING VIEW LAR QO'SHISH
+
+from .models import ReadingLesson, ReadingQuestion, ReadingAnswer, UserReadingProgress
+
+
+# courses/views.py - UserReadingProgress ni o'zgartirish
+
+@login_required
+def reading_detail(request, reading_id):
+    """Reading darsini ko'rsatish"""
+    reading = get_object_or_404(ReadingLesson, id=reading_id, is_active=True)
+    module = reading.module
+    course = module.course
+
+    # Barcha darslarni olish
+    all_lessons = list(module.lessons.all().order_by('order'))
+    all_listenings = list(module.listening_lessons.all().order_by('order'))
+    all_speakings = list(module.speaking_lessons.all().order_by('order'))
+    all_readings = list(module.reading_lessons.all().order_by('order'))
+
+    # Barcha darslarni birlashtirish
+    all_content = []
+    for l in all_lessons:
+        all_content.append(('video', l))
+    for l in all_listenings:
+        all_content.append(('listening', l))
+    for l in all_speakings:
+        all_content.append(('speaking', l))
+    for l in all_readings:
+        all_content.append(('reading', l))
+
+    all_content.sort(key=lambda x: x[1].order)
+
+    # Oldingi va keyingi darslarni topish
+    current_index = None
+    for i, (content_type, content) in enumerate(all_content):
+        if content_type == 'reading' and content.id == reading_id:
+            current_index = i
+            break
+
+    prev_content = all_content[current_index - 1] if current_index and current_index > 0 else None
+    next_content = all_content[current_index + 1] if current_index and current_index < len(all_content) - 1 else None
+
+    # Savollarni olish
+    questions = reading.questions.all().order_by('order')
+
+    # Progress - faqat umumiy progressni olish
+    user_progress = UserProgress.objects.filter(
+        user=request.user,
+        reading_lesson=reading
+    ).first()
+
+    # Reading progress
+    reading_progress = UserReadingProgress.objects.filter(
+        user=request.user,
+        reading_lesson=reading
+    ).first()
+
+    return render(request, 'reading_detail.html', {
+        'reading': reading,
+        'module': module,
+        'course': course,
+        'questions': questions,
+        'prev_content': prev_content,
+        'next_content': next_content,
+        'completed': user_progress.completed if user_progress else False,
+        'reading_progress': reading_progress
+    })
+
+
+@csrf_exempt
+@login_required
+def submit_reading_test(request, reading_id):
+    """Reading testini topshirish"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            reading = get_object_or_404(ReadingLesson, id=reading_id)
+
+            total_questions = 0
+            correct_answers = 0
+            results = {}
+            time_spent = data.get('time_spent', 0)
+
+            # Savollarni tekshirish
+            questions = reading.questions.all().order_by('order')
+
+            for question in questions:
+                user_answer = data.get(f'question_{question.id}')
+                correct_answer = question.answers.filter(is_correct=True).first()
+
+                if user_answer and correct_answer:
+                    if str(user_answer) == str(correct_answer.id):
+                        correct_answers += 1
+                        results[f'question_{question.id}'] = 'correct'
+                    else:
+                        results[f'question_{question.id}'] = 'wrong'
+                else:
+                    results[f'question_{question.id}'] = 'not_answered'
+
+                total_questions += 1
+
+            # Ballarni hisoblash
+            if total_questions > 0:
+                score = (correct_answers / total_questions) * 100
+                passed = score >= 60  # IELTS standard 60%
+            else:
+                score = 0
+                passed = False
+
+            # Umumiy Progressni saqlash
+            user_progress, created = UserProgress.objects.get_or_create(
+                user=request.user,
+                reading_lesson=reading,
+                defaults={'score': score, 'completed': passed}
+            )
+
+            if not created:
+                user_progress.score = score
+                user_progress.completed = passed
+                if passed:
+                    user_progress.completed_at = timezone.now()
+                user_progress.save()
+
+            # Maxsus Reading progressni saqlash
+            reading_progress, created = UserReadingProgress.objects.get_or_create(
+                user=request.user,
+                reading_lesson=reading,
+                defaults={
+                    'score': score,
+                    'completed': passed,
+                    'time_spent': time_spent,
+                    'correct_answers': correct_answers,
+                    'total_questions': total_questions
+                }
+            )
+
+            if not created:
+                reading_progress.score = score
+                reading_progress.completed = passed
+                reading_progress.time_spent = time_spent
+                reading_progress.correct_answers = correct_answers
+                reading_progress.total_questions = total_questions
+                if passed:
+                    reading_progress.completed_at = timezone.now()
+                reading_progress.save()
+
+            return JsonResponse({
+                'success': True,
+                'score': score,
+                'passed': passed,
+                'correct_answers': correct_answers,
+                'total_questions': total_questions,
+                'time_spent': time_spent,
+                'results': results
+            })
+
+        except Exception as e:
+            print(f"Reading test error: {e}")
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+# courses/views.py - module_detail funksiyasini to'g'rilash
+
+@login_required
+def module_detail(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    # Barcha dars turlarini olish
+    video_lessons = module.lessons.all()
+    listening_lessons = module.listening_lessons.all()
+    speaking_lessons = module.speaking_lessons.all()
+    reading_lessons = module.reading_lessons.all()
+
+    all_lessons = []
+
+    # Video darslar
+    for lesson in video_lessons:
+        progress = UserProgress.objects.filter(user=request.user, lesson=lesson).first()
+        all_lessons.append({
+            'id': lesson.id,
+            'title': lesson.title,
+            'duration': lesson.duration,
+            'order': lesson.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'video',
+            'object': lesson
+        })
+
+    # Listening darslar
+    for listening in listening_lessons:
+        progress = UserProgress.objects.filter(user=request.user, listening_lesson=listening).first()
+        all_lessons.append({
+            'id': listening.id,
+            'title': listening.title,
+            'duration': f"{listening.timer_minutes} min",
+            'order': listening.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'listening',
+            'listening_type': listening.get_listening_type_display(),
+            'object': listening
+        })
+
+    # Speaking darslar
+    for speaking in speaking_lessons:
+        progress = UserProgress.objects.filter(user=request.user, speaking_lesson=speaking).first()
+        all_lessons.append({
+            'id': speaking.id,
+            'title': speaking.title,
+            'duration': f"{speaking.target_duration} soniya",
+            'order': speaking.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'speaking',
+            'speaking_type': speaking.get_speaking_type_display(),
+            'object': speaking
+        })
+
+    # READING DARSLARNI QO'SHISH
+    for reading in reading_lessons:
+        progress = UserProgress.objects.filter(user=request.user, reading_lesson=reading).first()
+        all_lessons.append({
+            'id': reading.id,
+            'title': reading.title,
+            'duration': f"{reading.timer_minutes} daqiqa",
+            'order': reading.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'reading',
+            'reading_type': reading.get_reading_type_display(),
+            'object': reading
+        })
+
+    # Order bo'yicha tartiblash
+    all_lessons.sort(key=lambda x: x['order'])
+
+    # Har bir darsga ketma-ket raqam berish
+    for index, lesson in enumerate(all_lessons, 1):
+        lesson['display_order'] = index
+
+    return render(request, 'module_detail.html', {
+        'module': module,
+        'lessons': all_lessons
+    })
+
+
+# courses/views.py - WRITING VIEW LAR QO'SHISH
+
+from .models import WritingLesson, WritingAttempt, UserWritingProgress
+from gigachat import GigaChat
+
+
+# ... avvalgi funksiyalar ...
+
+@login_required
+def writing_detail(request, writing_id):
+    """Writing darsini ko'rsatish"""
+    writing = get_object_or_404(WritingLesson, id=writing_id, is_active=True)
+    module = writing.module
+    course = module.course
+
+    # Barcha darslarni olish
+    all_lessons = list(module.lessons.all().order_by('order'))
+    all_listenings = list(module.listening_lessons.all().order_by('order'))
+    all_speakings = list(module.speaking_lessons.all().order_by('order'))
+    all_readings = list(module.reading_lessons.all().order_by('order'))
+    all_writings = list(module.writing_lessons.all().order_by('order'))
+
+    # Barcha darslarni birlashtirish
+    all_content = []
+    for l in all_lessons:
+        all_content.append(('video', l))
+    for l in all_listenings:
+        all_content.append(('listening', l))
+    for l in all_speakings:
+        all_content.append(('speaking', l))
+    for l in all_readings:
+        all_content.append(('reading', l))
+    for l in all_writings:
+        all_content.append(('writing', l))
+
+    all_content.sort(key=lambda x: x[1].order)
+
+    # Oldingi va keyingi darslarni topish
+    current_index = None
+    for i, (content_type, content) in enumerate(all_content):
+        if content_type == 'writing' and content.id == writing_id:
+            current_index = i
+            break
+
+    prev_content = all_content[current_index - 1] if current_index and current_index > 0 else None
+    next_content = all_content[current_index + 1] if current_index and current_index < len(all_content) - 1 else None
+
+    # Urinishlar
+    attempts = WritingAttempt.objects.filter(
+        user=request.user,
+        writing_lesson=writing
+    ).order_by('-created_at')[:5]
+
+    # Progress
+    user_progress = UserProgress.objects.filter(
+        user=request.user,
+        writing_lesson=writing
+    ).first()
+
+    writing_progress = UserWritingProgress.objects.filter(
+        user=request.user,
+        writing_lesson=writing
+    ).first()
+
+    return render(request, 'writing_detail.html', {
+        'writing': writing,
+        'module': module,
+        'course': course,
+        'attempts': attempts,
+        'prev_content': prev_content,
+        'next_content': next_content,
+        'completed': user_progress.completed if user_progress else False,
+        'writing_progress': writing_progress
+    })
+
+
+def analyze_writing_with_ai(text, writing_lesson):
+    """Writing matnini AI bilan tahlil qilish"""
+
+    if not text or len(text.strip()) < 50:
+        return generate_demo_writing_analysis(text, writing_lesson)
+
+    try:
+        print(f"Analyzing writing with GigaChat: {text[:100]}...")
+
+        prompt = f"""
+        You are an expert IELTS writing examiner. Analyze this writing attempt:
+
+        WRITING TASK TYPE: {writing_lesson.get_writing_type_display()}
+        TASK: {writing_lesson.task_text}
+
+        STUDENT ANSWER: "{text}"
+
+        SCORING CRITERIA (0-100 for each):
+        1. Task Achievement/Response (Content): Does it fully answer the question?
+        2. Coherence and Cohesion: Is it well-organized with good paragraphing?
+        3. Lexical Resource (Vocabulary): Range and accuracy of vocabulary
+        4. Grammatical Range and Accuracy: Sentence structure and grammar
+
+        REQUIREMENTS:
+        - Give constructive, specific feedback
+        - Mention strengths and areas for improvement
+        - Provide actionable suggestions
+        - Keep feedback encouraging but honest
+
+        FORMAT RESPONSE AS VALID JSON ONLY:
+        {{
+            "content_score": [number 0-100],
+            "coherence_score": [number 0-100],
+            "vocabulary_score": [number 0-100],
+            "grammar_score": [number 0-100],
+            "overall_score": [weighted average of above scores],
+            "feedback": "Detailed feedback in 4-5 sentences",
+            "suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3", "Suggestion 4"]
+        }}
+        """
+
+        print("Sending to GigaChat...")
+
+        with GigaChat(
+                credentials="MDE5YWFjYWMtNTdmYi03NTMwLTg4MTctMTQwN2IwNTNlM2FmOjAwNmQ3ZGYwLTM4N2EtNGI2ZS05ODQxLWZhZjAyOTJjZTAyMw==",
+                verify_ssl_certs=False,
+                model="GigaChat"
+        ) as giga:
+            response = giga.chat(prompt)
+            analysis_text = response.choices[0].message.content
+
+            print(f"GigaChat response: {analysis_text[:200]}...")
+
+            # JSON ni extract qilish
+            analysis = extract_json_from_text(analysis_text)
+
+            if analysis:
+                print("Writing analysis JSON extracted")
+
+                # Word count hisoblash
+                word_count = len(text.split())
+
+                # Qo'shimcha fieldlar
+                analysis['word_count'] = word_count
+                analysis['answer_text'] = text
+
+                # Ballarni to'g'rilash
+                score_keys = ['content_score', 'coherence_score', 'vocabulary_score',
+                              'grammar_score', 'overall_score']
+
+                for key in score_keys:
+                    if key in analysis:
+                        try:
+                            if isinstance(analysis[key], str):
+                                numbers = re.findall(r'\d+', analysis[key])
+                                if numbers:
+                                    score = int(numbers[0])
+                                    analysis[key] = max(0, min(100, score))
+                                else:
+                                    analysis[key] = 60
+                            else:
+                                score = int(analysis[key])
+                                analysis[key] = max(0, min(100, score))
+                        except:
+                            analysis[key] = 60
+
+                # Overall score ni hisoblash (agar yo'q bo'lsa)
+                if 'overall_score' not in analysis or analysis['overall_score'] == 0:
+                    weights = {'content_score': 0.25, 'coherence_score': 0.25,
+                               'vocabulary_score': 0.25, 'grammar_score': 0.25}
+                    weighted_sum = 0
+
+                    for key, weight in weights.items():
+                        if key in analysis:
+                            weighted_sum += analysis[key] * weight
+
+                    analysis['overall_score'] = round(weighted_sum)
+
+                return analysis
+
+            else:
+                print("Could not extract JSON, using demo analysis")
+                return generate_demo_writing_analysis(text, writing_lesson)
+
+    except Exception as e:
+        print(f"Writing analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        return generate_demo_writing_analysis(text, writing_lesson)
+
+
+def generate_demo_writing_analysis(text, writing_lesson):
+    """Demo writing analiz"""
+    word_count = len(text.split()) if text else 0
+
+    import random
+
+    level = writing_lesson.level
+    if level == 'beginner':
+        base_score = random.randint(45, 65)
+    elif level == 'intermediate':
+        base_score = random.randint(60, 75)
+    else:  # advanced
+        base_score = random.randint(70, 85)
+
+    return {
+        'content_score': random.randint(base_score - 10, base_score + 10),
+        'coherence_score': random.randint(base_score - 10, base_score + 10),
+        'vocabulary_score': random.randint(base_score - 10, base_score + 10),
+        'grammar_score': random.randint(base_score - 10, base_score + 10),
+        'overall_score': base_score,
+        'feedback': f"Good attempt for {writing_lesson.get_level_display()} level. You addressed the task requirements adequately. {writing_lesson.task_text[:100]}...",
+        'suggestions': [
+            "Use more varied sentence structures",
+            "Improve paragraph organization",
+            "Add more specific examples",
+            "Check grammar and punctuation"
+        ],
+        'word_count': word_count,
+        'answer_text': text if text else "No answer provided"
+    }
+
+
+@csrf_exempt
+@login_required
+def submit_writing(request, writing_id):
+    """Writing topshirish"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            writing = get_object_or_404(WritingLesson, id=writing_id)
+
+            answer_text = data.get('answer_text', '').strip()
+            time_spent = data.get('time_spent', 0)
+            word_count = data.get('word_count', 0)
+
+            if not answer_text:
+                return JsonResponse({'success': False, 'error': 'Iltimos, javob yozing!'})
+
+            # AI tahlili
+            print("Analyzing writing with AI...")
+            analysis_result = analyze_writing_with_ai(answer_text, writing)
+            print(f"Analysis complete. Overall score: {analysis_result.get('overall_score', 0)}")
+
+            # WritingAttempt ni yaratish
+            attempt = WritingAttempt.objects.create(
+                user=request.user,
+                writing_lesson=writing,
+                answer_text=answer_text,
+                word_count=word_count,
+                content_score=analysis_result.get('content_score', 0),
+                coherence_score=analysis_result.get('coherence_score', 0),
+                vocabulary_score=analysis_result.get('vocabulary_score', 0),
+                grammar_score=analysis_result.get('grammar_score', 0),
+                overall_score=analysis_result.get('overall_score', 0),
+                ai_feedback=analysis_result.get('feedback', ''),
+                suggestions="\n".join(analysis_result.get('suggestions', [])),
+                time_spent=time_spent
+            )
+
+            # Umumiy Progressni saqlash
+            user_progress, created = UserProgress.objects.get_or_create(
+                user=request.user,
+                writing_lesson=writing,
+                defaults={'score': analysis_result.get('overall_score', 0), 'completed': True}
+            )
+
+            if not created:
+                user_progress.score = analysis_result.get('overall_score', 0)
+                user_progress.completed = True
+                if not user_progress.completed_at:
+                    user_progress.completed_at = timezone.now()
+                user_progress.save()
+
+            # Maxsus Writing progressni yangilash
+            writing_progress, created = UserWritingProgress.objects.get_or_create(
+                user=request.user,
+                writing_lesson=writing,
+                defaults={
+                    'score': analysis_result.get('overall_score', 0),
+                    'best_score': analysis_result.get('overall_score', 0),
+                    'completed': True,
+                    'attempts_count': 1,
+                    'time_spent': time_spent
+                }
+            )
+
+            if not created:
+                writing_progress.attempts_count += 1
+                writing_progress.time_spent += time_spent
+                if analysis_result.get('overall_score', 0) > writing_progress.best_score:
+                    writing_progress.best_score = analysis_result.get('overall_score', 0)
+                writing_progress.score = analysis_result.get('overall_score', 0)
+                writing_progress.completed = True
+                if not writing_progress.completed_at:
+                    writing_progress.completed_at = timezone.now()
+                writing_progress.save()
+
+            return JsonResponse({
+                'success': True,
+                'attempt_id': attempt.id,
+                'scores': {
+                    'overall': analysis_result.get('overall_score', 0),
+                    'content': analysis_result.get('content_score', 0),
+                    'coherence': analysis_result.get('coherence_score', 0),
+                    'vocabulary': analysis_result.get('vocabulary_score', 0),
+                    'grammar': analysis_result.get('grammar_score', 0),
+                },
+                'feedback': analysis_result.get('feedback', ''),
+                'suggestions': analysis_result.get('suggestions', []),
+                'stats': {
+                    'word_count': word_count,
+                    'time_spent': time_spent
+                }
+            })
+
+        except Exception as e:
+            print(f"Writing submission error: {e}")
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@login_required
+def get_writing_attempt(request, attempt_id):
+    """Writing urinishini olish"""
+    try:
+        attempt = get_object_or_404(WritingAttempt, id=attempt_id, user=request.user)
+
+        return JsonResponse({
+            'success': True,
+            'attempt': {
+                'id': attempt.id,
+                'answer_text': attempt.answer_text,
+                'content_score': attempt.content_score,
+                'coherence_score': attempt.coherence_score,
+                'vocabulary_score': attempt.vocabulary_score,
+                'grammar_score': attempt.grammar_score,
+                'overall_score': attempt.overall_score,
+                'ai_feedback': attempt.ai_feedback,
+                'suggestions': attempt.suggestions.split('\n') if attempt.suggestions else [],
+                'word_count': attempt.word_count,
+                'time_spent': attempt.time_spent,
+                'created_at': attempt.created_at.strftime('%Y-%m-%d %H:%M'),
+            }
+        })
+
+    except Exception as e:
+        print(f"Error in get_writing_attempt: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+# Module detail funksiyasini yangilash (writing qo'shish)
+@login_required
+def module_detail(request, module_id):
+    module = get_object_or_404(Module, id=module_id)
+
+    # Barcha dars turlarini olish
+    video_lessons = module.lessons.all()
+    listening_lessons = module.listening_lessons.all()
+    speaking_lessons = module.speaking_lessons.all()
+    reading_lessons = module.reading_lessons.all()
+    writing_lessons = module.writing_lessons.all()  # YANGI QATOR
+
+    all_lessons = []
+
+    # Video darslar
+    for lesson in video_lessons:
+        progress = UserProgress.objects.filter(user=request.user, lesson=lesson).first()
+        all_lessons.append({
+            'id': lesson.id,
+            'title': lesson.title,
+            'duration': lesson.duration,
+            'order': lesson.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'video',
+            'object': lesson
+        })
+
+    # Listening darslar
+    for listening in listening_lessons:
+        progress = UserProgress.objects.filter(user=request.user, listening_lesson=listening).first()
+        all_lessons.append({
+            'id': listening.id,
+            'title': listening.title,
+            'duration': f"{listening.timer_minutes} min",
+            'order': listening.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'listening',
+            'listening_type': listening.get_listening_type_display(),
+            'object': listening
+        })
+
+    # Speaking darslar
+    for speaking in speaking_lessons:
+        progress = UserProgress.objects.filter(user=request.user, speaking_lesson=speaking).first()
+        all_lessons.append({
+            'id': speaking.id,
+            'title': speaking.title,
+            'duration': f"{speaking.target_duration} soniya",
+            'order': speaking.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'speaking',
+            'speaking_type': speaking.get_speaking_type_display(),
+            'object': speaking
+        })
+
+    # Reading darslar
+    for reading in reading_lessons:
+        progress = UserProgress.objects.filter(user=request.user, reading_lesson=reading).first()
+        all_lessons.append({
+            'id': reading.id,
+            'title': reading.title,
+            'duration': f"{reading.timer_minutes} daqiqa",
+            'order': reading.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'reading',
+            'reading_type': reading.get_reading_type_display(),
+            'object': reading
+        })
+
+    # WRITING DARSLARNI QO'SHISH - YANGI QATORLAR
+    for writing in writing_lessons:
+        progress = UserProgress.objects.filter(user=request.user, writing_lesson=writing).first()
+        all_lessons.append({
+            'id': writing.id,
+            'title': writing.title,
+            'duration': f"{writing.timer_minutes} daqiqa",
+            'order': writing.order,
+            'completed': progress.completed if progress else False,
+            'score': progress.score if progress else 0,
+            'type': 'writing',
+            'writing_type': writing.get_writing_type_display(),
+            'object': writing
+        })
+
+    # Order bo'yicha tartiblash
+    all_lessons.sort(key=lambda x: x['order'])
+
+    # Har bir darsga ketma-ket raqam berish
+    for index, lesson in enumerate(all_lessons, 1):
+        lesson['display_order'] = index
+
+    return render(request, 'module_detail.html', {
+        'module': module,
+        'lessons': all_lessons
+    })

@@ -1,3 +1,4 @@
+<!-- templates/module_detail.html - TO'G'RILANGAN VERSIYA (WRITING QO'SHILGAN) -->
 {% extends 'base.html' %}
 
 {% block title %}{{ module.title }} - eduSultonawithShaxzod{% endblock %}
@@ -23,7 +24,12 @@
         {% if lessons %}
             <div class="lessons-list">
                 {% for lesson in lessons %}
-                <div class="lesson-item {% if lesson.completed %}completed{% endif %} {% if lesson.type == 'listening' %}listening-item{% elif lesson.type == 'speaking' %}speaking-item{% endif %}">
+                <div class="lesson-item {% if lesson.completed %}completed{% endif %}
+                     {% if lesson.type == 'listening' %}listening-item
+                     {% elif lesson.type == 'speaking' %}speaking-item
+                     {% elif lesson.type == 'reading' %}reading-item
+                     {% elif lesson.type == 'writing' %}writing-item{% endif %}">
+
                     <div class="lesson-number">{{ lesson.display_order }}</div>
 
                     <div class="lesson-icon">
@@ -33,6 +39,10 @@
                             <i class="fas fa-headphones"></i>
                         {% elif lesson.type == 'speaking' %}
                             <i class="fas fa-microphone-alt"></i>
+                        {% elif lesson.type == 'reading' %}
+                            <i class="fas fa-book-reader"></i>
+                        {% elif lesson.type == 'writing' %}
+                            <i class="fas fa-pen-alt"></i>
                         {% endif %}
                     </div>
 
@@ -47,16 +57,28 @@
                                 <span class="lesson-type-badge speaking-badge">
                                     <i class="fas fa-microphone-alt"></i> Speaking
                                 </span>
+                            {% elif lesson.type == 'reading' %}
+                                <span class="lesson-type-badge reading-badge">
+                                    <i class="fas fa-book"></i> Reading
+                                </span>
+                            {% elif lesson.type == 'writing' %}
+                                <span class="lesson-type-badge writing-badge">
+                                    <i class="fas fa-pen"></i> Writing
+                                </span>
                             {% endif %}
                         </h3>
 
                         <div class="lesson-meta">
-                            <span><i class="fas fa-clock"></i> {{ lesson.duration|default:"15:00" }}</span>
+                            <span><i class="fas fa-clock"></i> {{ lesson.duration }}</span>
 
                             {% if lesson.type == 'listening' %}
                                 <span class="type-badge">{{ lesson.listening_type }}</span>
                             {% elif lesson.type == 'speaking' %}
                                 <span class="type-badge">{{ lesson.speaking_type }}</span>
+                            {% elif lesson.type == 'reading' %}
+                                <span class="type-badge">{{ lesson.reading_type }}</span>
+                            {% elif lesson.type == 'writing' %}
+                                <span class="type-badge">{{ lesson.writing_type }}</span>
                             {% endif %}
 
                             {% if lesson.completed %}
@@ -64,9 +86,13 @@
                             {% endif %}
                         </div>
 
-                        {% if lesson.type == 'speaking' and lesson.object.description %}
+                        {% if lesson.type == 'reading' and lesson.object.description %}
                             <p class="lesson-description">{{ lesson.object.description|truncatechars:100 }}</p>
                         {% elif lesson.type == 'listening' and lesson.object.description %}
+                            <p class="lesson-description">{{ lesson.object.description|truncatechars:100 }}</p>
+                        {% elif lesson.type == 'speaking' and lesson.object.description %}
+                            <p class="lesson-description">{{ lesson.object.description|truncatechars:100 }}</p>
+                        {% elif lesson.type == 'writing' and lesson.object.description %}
                             <p class="lesson-description">{{ lesson.object.description|truncatechars:100 }}</p>
                         {% endif %}
                     </div>
@@ -83,6 +109,14 @@
                         {% elif lesson.type == 'speaking' %}
                             <a href="{% url 'speaking_detail' lesson.id %}" class="btn-primary btn-speaking">
                                 <i class="fas fa-microphone-alt"></i> Speaking boshlash
+                            </a>
+                        {% elif lesson.type == 'reading' %}
+                            <a href="{% url 'reading_detail' lesson.id %}" class="btn-primary btn-reading">
+                                <i class="fas fa-book"></i> Reading boshlash
+                            </a>
+                        {% elif lesson.type == 'writing' %}
+                            <a href="{% url 'writing_detail' lesson.id %}" class="btn-primary btn-writing">
+                                <i class="fas fa-pen-alt"></i> Writing boshlash
                             </a>
                         {% endif %}
                     </div>
@@ -132,12 +166,28 @@
     border-left-color: #2ecc71;
 }
 
+.reading-item {
+    border-left-color: #f39c12;
+}
+
+.writing-item {
+    border-left-color: #e74c3c;
+}
+
 .listening-item .lesson-icon {
     color: #9b59b6;
 }
 
 .speaking-item .lesson-icon {
     color: #2ecc71;
+}
+
+.reading-item .lesson-icon {
+    color: #f39c12;
+}
+
+.writing-item .lesson-icon {
+    color: #e74c3c;
 }
 
 .lesson-number {
@@ -155,6 +205,14 @@
 
 .speaking-item .lesson-number {
     color: #2ecc71;
+}
+
+.reading-item .lesson-number {
+    color: #f39c12;
+}
+
+.writing-item .lesson-number {
+    color: #e74c3c;
 }
 
 .lesson-icon {
@@ -196,6 +254,16 @@
     color: #2e7d32;
 }
 
+.reading-badge {
+    background: #fef5e7;
+    color: #f39c12;
+}
+
+.writing-badge {
+    background: #ffebee;
+    color: #c62828;
+}
+
 .lesson-meta {
     display: flex;
     gap: 15px;
@@ -222,6 +290,14 @@
 
 .type-badge[style*="speaking"] {
     background: #2ecc71;
+}
+
+.type-badge[style*="reading"] {
+    background: #f39c12;
+}
+
+.type-badge[style*="writing"] {
+    background: #e74c3c;
 }
 
 .completed-badge {
@@ -267,8 +343,20 @@
     color: white;
 }
 
+.btn-reading {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+}
+
+.btn-writing {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
 .btn-listening:hover,
-.btn-speaking:hover {
+.btn-speaking:hover,
+.btn-reading:hover,
+.btn-writing:hover {
     transform: translateY(-2px);
     color: white;
 }
@@ -279,6 +367,14 @@
 
 .btn-speaking:hover {
     background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+}
+
+.btn-reading:hover {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+}
+
+.btn-writing:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
 }
 
 .empty-lessons {
@@ -313,27 +409,27 @@
         align-items: flex-start;
         padding: 15px;
     }
-    
+
     .lesson-number {
         margin-right: 0;
         margin-bottom: 10px;
     }
-    
+
     .lesson-icon {
         margin-right: 0;
         margin-bottom: 10px;
     }
-    
+
     .lesson-actions {
         margin-top: 15px;
         width: 100%;
     }
-    
+
     .lesson-actions a {
         width: 100%;
         text-align: center;
     }
-    
+
     .lesson-meta {
         flex-direction: column;
         align-items: flex-start;

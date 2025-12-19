@@ -29,10 +29,15 @@ urlpatterns = [
     path('api/save-listening-progress/', views.save_listening_progress, name='save_listening_progress'),
     path('listening/<int:listening_id>/check/', views.check_listening_answers, name='check_listening_answers'),
     path('api/submit-listening-test/<int:listening_id>/', views.submit_listening_test, name='submit_listening_test'),
-
-    # SPEAKING API endpoints - BU YANGI QATORLAR
-    path('api/process-speaking/', views.process_speaking, name='process_speaking'),  # ← BU QATORNI QO'SHING
+    path('api/process-speaking/', views.process_speaking, name='process_speaking'),
     path('api/speaking-attempt/<int:attempt_id>/', views.get_speaking_attempt, name='get_speaking_attempt'),
+path('reading/<int:reading_id>/', views.reading_detail, name='reading_detail'),
+    path('api/submit-reading-test/<int:reading_id>/', views.submit_reading_test, name='submit_reading_test'),
+    # Writing endpoints
+    path('writing/<int:writing_id>/', views.writing_detail, name='writing_detail'),
+    path('api/submit-writing/<int:writing_id>/', views.submit_writing, name='submit_writing'),
+    path('api/writing-attempt/<int:attempt_id>/', views.get_writing_attempt, name='get_writing_attempt'),
+
 ]
 
 # DEBUG rejimida media va static fayllarni ko'rsatish

@@ -141,11 +141,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'
-# Speaking uchun API sozlamalari
-SPEAKING_API_KEY = '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'  # OpenRouter yoki OpenAI API key
-SPEAKING_ENGINE = 'gpt-3.5-turbo'  # 'gpt-4', 'gpt-3.5-turbo'
-SPEECH_TO_TEXT_SERVICE = 'google'  # 'google', 'whisper'
-
 # Audio settings
 MAX_SPEAKING_DURATION = 300  # 5 daqiqa
 MAX_AUDIO_SIZE = 10 * 1024 * 1024  # 10MB

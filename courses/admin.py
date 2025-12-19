@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 from .models import Course, Module, Lesson, Question, Answer, UserProgress, UserQuestion, ListeningLesson, \
-    ListeningQuestion, ListeningOption, GapFillingQuestion, GapOption, TrueFalseNotGiven, MatchingQuestion, SpeakingLesson, SpeakingQuestion, SpeakingAttempt
+    ListeningQuestion, ListeningOption, GapFillingQuestion, GapOption, TrueFalseNotGiven, MatchingQuestion, SpeakingLesson, SpeakingQuestion, SpeakingAttempt,ReadingLesson, ReadingQuestion, ReadingAnswer, UserReadingProgress
 from django.utils.html import format_html
 
 
@@ -174,3 +174,116 @@ class SpeakingAttemptAdmin(admin.ModelAdmin):
             'fields': ('ai_feedback', 'suggestions')
         }),
     )
+
+class ReadingAnswerInline(admin.TabularInline):
+    model = ReadingAnswer
+    extra = 4
+
+
+@admin.register(ReadingQuestion)
+class ReadingQuestionAdmin(admin.ModelAdmin):
+    inlines = [ReadingAnswerInline]
+    list_display = ('question_text', 'reading_lesson', 'question_type', 'order')
+    list_filter = ('reading_lesson__module__course', 'reading_lesson', 'question_type')
+    ordering = ('reading_lesson', 'order')
+
+
+@admin.register(ReadingLesson)
+class ReadingLessonAdmin(admin.ModelAdmin):
+    list_display = ('title', 'module', 'reading_type', 'level', 'order', 'is_active', 'diagram_preview')
+    list_filter = ('module__course', 'module', 'reading_type', 'level', 'is_active')
+    search_fields = ('title', 'description', 'reading_text')
+    ordering = ('module', 'order')
+
+    fieldsets = (
+        ('Asosiy ma\'lumotlar', {
+            'fields': ('module', 'title', 'reading_type', 'level', 'order', 'is_active')
+        }),
+        ('Kontent', {
+            'fields': ('description', 'reading_text', 'instruction', 'diagram_image')
+        }),
+        ('Vaqt va so\'zlar', {
+            'fields': ('timer_minutes', 'word_count')
+        }),
+    )
+
+    def diagram_preview(self, obj):
+        if obj.diagram_image:
+            return format_html(
+                f'<img src="{obj.diagram_image.url}" style="width: 50px; height: 50px; object-fit: cover;" />')
+        return "—"
+
+    diagram_preview.short_description = 'Diagramma'
+
+
+@admin.register(UserReadingProgress)
+class UserReadingProgressAdmin(admin.ModelAdmin):
+    list_display = ('user', 'reading_lesson', 'score', 'completed', 'time_spent', 'completed_at')
+    list_filter = ('completed', 'reading_lesson__module__course')
+    search_fields = ('user__username', 'reading_lesson__title')
+
+
+# courses/admin.py - WRITING ADMIN QO'SHISH
+
+from .models import WritingLesson, WritingAttempt, UserWritingProgress
+from django.utils.html import format_html
+
+
+# ... avvalgi adminlar ...
+
+@admin.register(WritingAttempt)
+class WritingAttemptAdmin(admin.ModelAdmin):
+    list_display = ('user', 'writing_lesson', 'overall_score', 'word_count', 'created_at')
+    list_filter = ('writing_lesson__module__course', 'writing_lesson', 'created_at')
+    search_fields = ('user__username', 'writing_lesson__title', 'answer_text')
+    readonly_fields = ('created_at',)
+
+    fieldsets = (
+        ('Asosiy ma\'lumotlar', {
+            'fields': ('user', 'writing_lesson', 'answer_text', 'word_count', 'time_spent', 'created_at')
+        }),
+        ('Baholar', {
+            'fields': ('content_score', 'coherence_score', 'vocabulary_score', 'grammar_score', 'overall_score')
+        }),
+        ('Tahlil', {
+            'fields': ('ai_feedback', 'suggestions')
+        }),
+    )
+
+
+@admin.register(WritingLesson)
+class WritingLessonAdmin(admin.ModelAdmin):
+    list_display = ('title', 'module', 'writing_type', 'task_type', 'level', 'order', 'is_active', 'example_preview')
+    list_filter = ('module__course', 'module', 'writing_type', 'task_type', 'level', 'is_active')
+    search_fields = ('title', 'description', 'task_text')
+    ordering = ('module', 'order')
+
+    fieldsets = (
+        ('Asosiy ma\'lumotlar', {
+            'fields': ('module', 'title', 'writing_type', 'task_type', 'level', 'order', 'is_active')
+        }),
+        ('Kontent', {
+            'fields': ('description', 'task_text', 'instruction', 'example_image')
+        }),
+        ('So\'zlar va vaqt', {
+            'fields': ('word_count_min', 'word_count_max', 'timer_minutes')
+        }),
+        ('Baholash mezonlari', {
+            'fields': ('criteria_content', 'criteria_coherence', 'criteria_vocabulary', 'criteria_grammar')
+        }),
+    )
+
+    def example_preview(self, obj):
+        if obj.example_image:
+            return format_html(
+                f'<img src="{obj.example_image.url}" style="width: 50px; height: 50px; object-fit: cover;" />')
+        return "—"
+
+    example_preview.short_description = 'Namuna'
+
+
+@admin.register(UserWritingProgress)
+class UserWritingProgressAdmin(admin.ModelAdmin):
+    list_display = ('user', 'writing_lesson', 'score', 'best_score', 'completed', 'attempts_count', 'completed_at')
+    list_filter = ('completed', 'writing_lesson__module__course')
+    search_fields = ('user__username', 'writing_lesson__title')

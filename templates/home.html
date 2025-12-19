@@ -1,57 +1,710 @@
+<!-- templates/home.html -->
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}eduSultonawithShaxzod - Ingliz tili va Sun'iy intellekt kurslari{% endblock %}
 
 {% block content %}
-<div class="hero">
+<!-- Hero Section -->
+<section class="hero-section">
     <div class="container">
         <div class="hero-content">
-            <h2>Kelajagingizni bugundan quring!</h2>
-            <p>O'zbekistonning eng sifatli onlayn ta'lim platformasida bilim oling</p>
-            {% if not user.is_authenticated %}
-                <a href="{% url 'register' %}" class="btn-primary">
-                    <i class="fas fa-user-plus"></i> Ro'yxatdan o'tish
-                </a>
-            {% else %}
-                <a href="#courses" class="btn-primary">Kurslarni ko'rish</a>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<section id="courses" class="courses-section">
-    <div class="container">
-        <h2 class="section-title">Bizning Kurslarimiz</h2>
-
-        <div class="courses-grid">
-            <!-- Ingliz tili kursi -->
-            <div class="course-card">
-                <div class="course-icon">
-                    <i class="fas fa-language"></i>
+            <div class="hero-text">
+                <h1>Ingliz tilini va <span class="highlight">Sun'iy intellekt</span>ni biz bilan o'rganing</h1>
+                <p>Zamonaviy platformada interaktiv darslar, real vazifalar va shaxsiy qo'llab-quvvatlash</p>
+                <div class="hero-buttons">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'course_detail' 1 %}" class="btn-primary">Kurslarni ko'rish</a>
+                    {% else %}
+                        <a href="{% url 'register' %}" class="btn-primary">Ro'yxatdan o'tish</a>
+                        <a href="{% url 'login' %}" class="btn-secondary">Kirish</a>
+                    {% endif %}
                 </div>
-                <h3>Ingliz tili</h3>
-                <p>Boshlang'ichdan IELTS darajasigacha ingliz tilini o'rganing.</p>
-                <a href="{% url 'course_detail' 1 %}" class="btn-secondary">Kursni ko'rish</a>
             </div>
-
-            <!-- Data Science va Sun'iy Intellekt -->
-            <div class="course-card featured">
-                <div class="course-icon">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <h3>Data Science va Sun'iy Intellekt</h3>
-                <p>Zamonaviy Data Science va Sun'iy Intellekt texnologiyalarini o'rganing.</p>
-                <a href="{% url 'course_detail' 2 %}" class="btn-primary">Kursni ko'rish</a>
-            </div>
-
-            <!-- Pedagogika -->
-            <div class="course-card">
-                <div class="course-icon">
-                    <i class="fas fa-chalkboard-teacher"></i>
-                </div>
-                <h3>Pedagogika</h3>
-                <p>Zamonaviy pedagogik usullar va o'qitish metodologiyalarini o'rganing.</p>
-                <a href="{% url 'course_detail' 3 %}" class="btn-secondary">Kursni ko'rish</a>
+            <div class="hero-image">
+                <img src="{% static 'images/hero-image.png' %}" alt="Online Learning">
             </div>
         </div>
     </div>
 </section>
+
+<!-- Why Choose Us Section (MOHIRDEV style) -->
+<section class="why-section">
+    <div class="container">
+        <div class="section-header">
+            <h2><span class="highlight">Nima uchun</span> aynan bizda o'qish kerak?</h2>
+            <p>Bizning afzalliklarimiz bilan tanishing</p>
+        </div>
+
+        <!-- Video Banner (click to play) -->
+        <div class="video-banner" onclick="playIntroVideo()">
+            <div class="video-thumbnail">
+                <img src="{% static 'images/video-thumbnail.jpg' %}" alt="Platforma haqida video">
+                <div class="play-button">
+                    <i class="fas fa-play"></i>
+                </div>
+            </div>
+            <div class="video-info">
+                <h3>Platformamiz haqida qisqacha video</h3>
+                <p>3 daqiqada platformamiz imkoniyatlari bilan tanishing</p>
+            </div>
+        </div>
+
+        <!-- Video Modal -->
+        <div id="videoModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeVideoModal()">&times;</span>
+                <video id="introVideo" controls width="100%">
+                    <source src="{% static 'videos/intro.mp4' %}" type="video/mp4">
+                    Sizning brauzeringiz video formatini qo'llab-quvvatlamaydi.
+                </video>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <h3>Professional mentorlar</h3>
+                <p>Har bir kurs tajribali mutaxassislar tomonidan tayyorlangan</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-headphones-alt"></i>
+                </div>
+                <h3>Listening & Speaking</h3>
+                <p>AI yordamida ovozni tahlil qilish va to'g'irlash</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-book-reader"></i>
+                </div>
+                <h3>IELTS Reading</h3>
+                <p>Haqiqiy IELTS testlariga mos reading mashqlari</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Progress monitoring</h3>
+                <p>Har bir o'quvchi uchun individual progress monitoring</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Us Section -->
+<section class="about-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Biz <span class="highlight">haqimizda</span></h2>
+        </div>
+
+        <div class="about-content">
+            <div class="about-image">
+                <img src="{% static 'images/about-us.jpg' %}" alt="Biz haqimizda">
+            </div>
+            <div class="about-text">
+                <h3>SS Future Skills - Kelajak ko'nikmalari maktabi</h3>
+                <p>
+                    Biz 2025-yilda tashkil etilgan yangi avlod onlayn ta'lim platformasimiz.
+                    Maqsadimiz - O'zbekiston yoshlariga zamonaviy kasblar va ko'nikmalarni
+                    o'rgatish, ularni global bozorga tayyorlash.
+                </p>
+                <div class="stats">
+                    <div class="stat-item">
+                        <h4>500+</h4>
+                        <p>O'quvchi</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4>98%</h4>
+                        <p>Muvaffaqiyat darajasi</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4>24/7</h4>
+                        <p>Qo'llab-quvvatlash</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Mentors Section -->
+<section class="mentors-section">
+    <div class="container">
+        <div class="section-header">
+            <h2><span class="highlight">Mentorlarimiz</span> bilan tanishing</h2>
+            <p>Har bir kurs professional mentorlar tomonidan boshqariladi</p>
+        </div>
+
+        <div class="mentors-grid">
+            <!-- Mentor 1: English Teacher -->
+            <div class="mentor-card">
+                <div class="mentor-image">
+                    <img src="{% static 'images/mentors/english-teacher.jpg' %}" alt="Ingliz tili o'qituvchisi">
+                </div>
+                <div class="mentor-info">
+                    <h3>Sultona ustoz</h3>
+                    <p class="mentor-title">Ingliz tili o'qituvchisi</p>
+                    <p class="mentor-bio">
+                        IELTS 8.5, CELTA sertifikati, 5 yillik tajriba.
+                        100+ talabani IELTSdan muvaffaqiyatli o'tkazgan.
+                    </p>
+                    <div class="mentor-social">
+                        <a href="https://t.me/rahmonov_shaxzod" target="_blank" class="social-link">
+                            <i class="fab fa-telegram"></i>
+                        </a>
+                        <a href="https://instagram.com/rahmonov_shaxzod_" target="_blank" class="social-link">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="mailto:shaxzod@edurahmonov.uz" class="social-link">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mentor 2: AI Teacher -->
+            <div class="mentor-card">
+                <div class="mentor-image">
+                    <img src="{% static 'images/mentors/ai-teacher.jpg' %}" alt="AI mutaxassisi">
+                </div>
+                <div class="mentor-info">
+                    <h3>Shaxzod Rahmonov</h3>
+                    <p class="mentor-title">Sun'iy intellekt mutaxassisi</p>
+                    <p class="mentor-bio">
+                        3 yillik AI bo'yicha tajriba.
+                        Machine Learning, Deep Learning, NLP sohalari mutaxassisi.
+                    </p>
+                    <div class="mentor-social">
+                        <a href="https://t.me/rahmonov_shaxzod" target="_blank" class="social-link">
+                            <i class="fab fa-telegram"></i>
+                        </a>
+                        <a href="https://linkedin.com/in/rahmonovshahzod" target="_blank" class="social-link">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                        <a href="mailto:rahmonov@edushaxzoduz" class="social-link">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mentor 3: Data Science -->
+            <div class="mentor-card">
+                <div class="mentor-image">
+                    <img src="{% static 'images/mentors/data-scientist.jpg' %}" alt="Data Scientist">
+                </div>
+                <div class="mentor-info">
+                    <h3>Raxmonov Shaxzod</h3>
+                    <p class="mentor-title">Data Scientist</p>
+                    <p class="mentor-bio">
+                        Python, Data Science mutaxassisi. 5 yillik Data Analytics tajribasi.
+                    </p>
+                    <div class="mentor-social">
+                        <a href="https://t.me/rahmonov_shaxzod" target="_blank" class="social-link">
+                            <i class="fab fa-telegram"></i>
+                        </a>
+                        <a href="https://github.com/rahmonovshahzod" target="_blank" class="social-link">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="mailto:rahmonovsh.uz" class="social-link">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Courses Preview -->
+<section class="courses-section">
+    <div class="container">
+        <div class="section-header">
+            <h2><span class="highlight">Kurslarimiz</span> bilan tanishing</h2>
+            <p>Zamonaviy kasblarni biz bilan o'rganing</p>
+        </div>
+
+        <div class="courses-grid">
+            {% for course in courses %}
+            <div class="course-card">
+                <div class="course-badge {{ course.course_type }}">
+                    {{ course.get_course_type_display }}
+                </div>
+                <div class="course-info">
+                    <h3>{{ course.name }}</h3>
+                    <p>{{ course.description|truncatechars:100 }}</p>
+                    <div class="course-stats">
+                        <span><i class="fas fa-video"></i> {{ course.modules.count }} modul</span>
+                        <span><i class="fas fa-clock"></i> 36 soat</span>
+                    </div>
+                </div>
+                <div class="course-actions">
+                    <a href="{% url 'course_detail' course.id %}" class="btn-primary">Kursni ko'rish</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content">
+            <h2>Bugundan o'qishni boshlang!</h2>
+            <p>Birinchi dars bepul. Sinab ko'ring, keyin qaror qiling</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'course_detail' 1 %}" class="btn-primary btn-large">
+                    <i class="fas fa-play-circle"></i> Darslarni boshlash
+                </a>
+            {% else %}
+                <a href="{% url 'register' %}" class="btn-primary btn-large">
+                    <i class="fas fa-user-plus"></i> Ro'yxatdan o'tish
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<script>
+// Video Modal Functions
+function playIntroVideo() {
+    const modal = document.getElementById('videoModal');
+    const video = document.getElementById('introVideo');
+    modal.style.display = 'block';
+    video.play();
+}
+
+function closeVideoModal() {
+    const modal = document.getElementById('videoModal');
+    const video = document.getElementById('introVideo');
+    video.pause();
+    modal.style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('videoModal');
+    if (event.target == modal) {
+        closeVideoModal();
+    }
+}
+</script>
+
+<style>
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+}
+
+.hero-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: center;
+}
+
+.hero-text h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+.highlight {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.1em;
+}
+
+.hero-image img {
+    width: 100%;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+/* Why Section */
+.why-section {
+    padding: 80px 0;
+    background: #f8f9fa;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.section-header h2 {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+}
+
+.section-header p {
+    color: #666;
+    font-size: 1.2em;
+}
+
+/* Video Banner */
+.video-banner {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: 50px;
+    cursor: pointer;
+    transition: transform 0.3s;
+    display: flex;
+}
+
+.video-banner:hover {
+    transform: translateY(-5px);
+}
+
+.video-thumbnail {
+    flex: 1;
+    position: relative;
+    max-width: 400px;
+}
+
+.video-thumbnail img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}
+
+.play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70px;
+    height: 70px;
+    background: rgba(52, 152, 219, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5em;
+}
+
+.video-info {
+    flex: 2;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.video-info h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.5em;
+}
+
+/* Video Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+}
+
+.modal-content {
+    position: relative;
+    margin: 5% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 800px;
+}
+
+.close {
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    color: white;
+    font-size: 40px;
+    cursor: pointer;
+}
+
+/* Features Grid */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-top: 50px;
+}
+
+.feature-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #3498db, #2ecc71);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: white;
+    font-size: 1.5em;
+}
+
+/* About Section */
+.about-section {
+    padding: 80px 0;
+}
+
+.about-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: center;
+}
+
+.about-image img {
+    width: 100%;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.stats {
+    display: flex;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-item h4 {
+    font-size: 2em;
+    color: #3498db;
+    margin-bottom: 5px;
+}
+
+/* Mentors Section */
+.mentors-section {
+    padding: 80px 0;
+    background: #f8f9fa;
+}
+
+.mentors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 50px;
+}
+
+.mentor-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.mentor-card:hover {
+    transform: translateY(-10px);
+}
+
+.mentor-image {
+    height: 200px;
+    overflow: hidden;
+}
+
+.mentor-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mentor-info {
+    padding: 25px;
+}
+
+.mentor-title {
+    color: #3498db;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.mentor-bio {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.mentor-social {
+    display: flex;
+    gap: 15px;
+}
+
+.social-link {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3498db;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.social-link:hover {
+    background: #3498db;
+    color: white;
+    transform: translateY(-3px);
+}
+
+/* Courses Section */
+.courses-section {
+    padding: 80px 0;
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 50px;
+}
+
+.course-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.course-card:hover {
+    transform: translateY(-10px);
+}
+
+.course-badge {
+    padding: 10px 20px;
+    color: white;
+    font-weight: 600;
+}
+
+.course-badge.english {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.course-badge.data_science {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.course-badge.pedagogy {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.course-info {
+    padding: 25px;
+}
+
+.course-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 15px;
+    color: #666;
+}
+
+.course-actions {
+    padding: 0 25px 25px;
+}
+
+/* CTA Section */
+.cta-section {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 80px 0;
+    text-align: center;
+}
+
+.cta-content h2 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.cta-content p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-content {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-text h1 {
+        font-size: 2em;
+    }
+
+    .about-content {
+        grid-template-columns: 1fr;
+    }
+
+    .video-banner {
+        flex-direction: column;
+    }
+
+    .video-thumbnail {
+        max-width: 100%;
+    }
+
+    .stats {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .close {
+        right: 10px;
+        top: -50px;
+    }
+}
+</style>
 {% endblock %}
