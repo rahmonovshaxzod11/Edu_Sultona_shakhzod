@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kg*zp5^f#xfc+p!adxt)&hz91y9#bwn2fb#&)=qv!e16wgy61q'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'False'
@@ -33,14 +33,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Quyidagiga o'zgartiring:
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'https://oievuv-92-63-76-69.ru.tuna.am',  # Hozirgi Tuna domaini
-    '.tuna.am',                        # Barcha Tuna domainlari uchun
-    '.ngrok-free.app',                 # Agar Ngrok ham ishlatsangiz
-]
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.railway.app']
 
 # Application definition
 
@@ -62,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
 ]
 
 ROOT_URLCONF = 'edusulton.urls'
@@ -92,11 +86,14 @@ WSGI_APPLICATION = 'edusulton.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('PGDATABASE'),
+        'USER': os.environ.get('PGUSER'),
+        'PASSWORD': os.environ.get('PGPASSWORD'),
+        'HOST': os.environ.get('PGHOST'),
+        'PORT': os.environ.get('PGPORT'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -128,6 +125,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MAX_UPLOAD_SIZE = 2000 * 1024 * 1024  # 2000MB
@@ -144,6 +144,3 @@ LOGIN_URL = '/login/'
 # Audio settings
 MAX_SPEAKING_DURATION = 300  # 5 daqiqa
 MAX_AUDIO_SIZE = 10 * 1024 * 1024  # 10MB
-
-# Packages to install:
-# pip install SpeechRecognition pydub openai whisper openrouter
