@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-kg*zp5^f#xfc+p!adxt)&hz91y9#bwn2fb#&)=qv!e16wgy61q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'False'
 CSRF_TRUSTED_ORIGINS = [
     'https://oievuv-92-63-76-69.ru.tuna.am',  # Yangi Tuna domaini
     'https://*.tuna.am',                       # Barcha Tuna domainlari
