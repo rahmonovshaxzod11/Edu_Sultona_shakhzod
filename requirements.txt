@@ -25,3 +25,5 @@ whitenoise
 psycopg[binary,pool]
 python-dotenv
 pyttsx3
+dj-database-url==1.3.0
+gunicorn==21.2.0
