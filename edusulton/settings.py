@@ -33,7 +33,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Quyidagiga o'zgartiring:
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.railway.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.railway.app', '.onrender.com']
 
 # Application definition
 
